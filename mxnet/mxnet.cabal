@@ -13,9 +13,14 @@ cabal-version:              >= 1.10
 
 Library
     exposed-modules:
-        MXNet.Base
+        MXNet.Core.Base
+        MXNet.Core.Types
     other-modules:
+        MXNet.Core.Internal.FFI
+        MXNet.Core.Internal.Raw
     hs-source-dirs:         src
+    build-tools:            c2hs
     default-language:       Haskell2010
     build-depends:          base
+    extra-libraries:        mxnet
 
