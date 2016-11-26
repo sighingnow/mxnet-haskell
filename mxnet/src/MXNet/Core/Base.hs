@@ -8,11 +8,11 @@
 -- Interfaces in core module of MXNet.
 --
 module MXNet.Core.Base (
-      -- * Re-export data type definitions.
+      -- * Re-export data type definitions
       -- ** Type alias
-      MXUint
+      MXUInt
     , MXFloat
-      -- ** Handlers and Creators.
+      -- ** Handlers and Creators
     , NDArrayHandle
     , FunctionHandle
     , AtomicSymbolCreator
@@ -26,11 +26,10 @@ module MXNet.Core.Base (
     , RtcHandle
     , OptimizerCreator
     , OptimizerHandle
-      -- ** Callback types.
+      -- ** Callback types
     , ExecutorMonitorCallback
     , CustomOpPropCreator
-      -- * Re-export basic functions.
-    , mxGetLastError
+      -- * Re-export basic functions
     , mxRandomSeed
     , mxNotifyShutdown
     , mxNDArrayCreateNone
@@ -64,3 +63,4 @@ module MXNet.Core.Base (
     ) where
 
 import MXNet.Core.Internal.Raw
+import MXNet.Core.Internal.Types.Raw
