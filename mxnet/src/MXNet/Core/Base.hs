@@ -8,8 +8,29 @@
 -- Interfaces in core module of MXNet.
 --
 module MXNet.Core.Base (
-      -- * Re-export.
-      mxGetLastError
+      -- * Re-export data type definitions.
+      -- ** Type alias
+      MXUint
+    , MXFloat
+      -- ** Handlers and Creators.
+    , NDArrayHandle
+    , FunctionHandle
+    , AtomicSymbolCreator
+    , SymbolHandle
+    , AtomicSymbolHandle
+    , ExecutorHandle
+    , DataIterCreator
+    , DataIterHandle
+    , KVStoreHandle
+    , RecordIOHandle
+    , RtcHandle
+    , OptimizerCreator
+    , OptimizerHandle
+      -- ** Callback types.
+    , ExecutorMonitorCallback
+    , CustomOpPropCreator
+      -- * Re-export basic functions.
+    , mxGetLastError
     , mxRandomSeed
     , mxNotifyShutdown
     , mxNDArrayCreateNone

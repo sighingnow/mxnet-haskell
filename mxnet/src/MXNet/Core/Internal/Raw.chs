@@ -5,7 +5,7 @@
 -- license:                     MIT
 -- maintainer:                  sighingnow@gmail.com
 --
--- Direct C FFI bindings.
+-- Direct C FFI bindings for <mxnet/c_api.h>.
 --
 #if __GLASGOW_HASKELL__ >= 709
 {-# LANGUAGE Safe #-}
