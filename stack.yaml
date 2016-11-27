@@ -1,6 +1,7 @@
 resolver: lts-7.9
 
 packages:
+- c2hs-extra
 - mxnet
 
 extra-deps:
