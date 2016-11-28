@@ -37,10 +37,7 @@ peekStringArray n p = peekArray (fromIntegral n) p >>= mapM peekCString
 {-# SPECIALIZE peekStringArray :: CUInt -> Ptr (Ptr CChar) -> IO [String] #-}
 
 -- | Use an array of string as argument, usually used to pass multiple names to C
--- functions. Some references may be useful for understanding this function:
---
--- * <https://mail.haskell.org/pipermail/glasgow-haskell-users/2004-November/007426.html>
---
+-- functions.
 withStringArray :: [String] -> (Ptr (Ptr CChar) -> IO a) -> IO a
 withStringArray ss f = do
     ps <- mapM (\s -> withCString s return) ss
