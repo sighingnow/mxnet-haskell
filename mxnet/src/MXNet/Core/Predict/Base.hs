@@ -8,8 +8,11 @@
 -- Predict interfaces in core module of MXNet.
 --
 module MXNet.Core.Predict.Base (
-    -- * Re-exports
-      mxGetLastError
+      -- * Data types
+      PredictorHandle
+    , NDListHandle
+      -- * Re-exports functions.
+    , mxGetLastError
     , mxPredCreate
     , mxPredCreatePartialOut
     , mxPredGetOutputShape
@@ -23,5 +26,6 @@ module MXNet.Core.Predict.Base (
     , mxNDListFree
     ) where
 
-import MXNet.Core.Internal.Raw ( mxGetLastError )
+import MXNet.Core.Internal.Types.Raw ( PredictorHandle, NDListHandle )
+import MXNet.Core.Base.Internal.Raw ( mxGetLastError )
 import MXNet.Core.Predict.Internal.Raw
