@@ -17,13 +17,8 @@
 module MXNet.Core.Internal.Types.Raw where
 
 import Foreign.C.Types
-import Foreign.Marshal.Alloc
-import Foreign.Marshal.Array
-import Foreign.Marshal.Utils ( with )
 import Foreign.Ptr
 import Foreign.Storable
-
-import MXNet.Core.Internal.FFI
 
 #include <mxnet/c_api.h>
 #include <mxnet/c_predict_api.h>

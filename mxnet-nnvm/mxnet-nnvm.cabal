@@ -19,6 +19,7 @@ Library
         MXNet.NNVM.Base.Internal.Raw
     hs-source-dirs:         src
     build-tools:            c2hs
+    ghc-options:            -Wall
     default-language:       Haskell2010
     build-depends:          base
                           , c2hs-extra

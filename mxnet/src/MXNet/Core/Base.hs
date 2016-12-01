@@ -8,7 +8,7 @@
 -- Interfaces in core module of MXNet.
 --
 module MXNet.Core.Base (
-      -- * Re-export data type definitions
+      -- * Data type definitions
       -- ** Type alias
       MXUInt
     , MXFloat
@@ -29,9 +29,12 @@ module MXNet.Core.Base (
       -- ** Callback types
     , ExecutorMonitorCallback
     , CustomOpPropCreator
-      -- * Re-export basic functions
+      -- * Error handling.
+    , mxGetLastError
+      -- * Global State setups
     , mxRandomSeed
     , mxNotifyShutdown
+      -- * NDArray creation and deletion
     , mxNDArrayCreateNone
     , mxNDArrayCreate
     , mxNDArrayCreateEx
@@ -52,15 +55,38 @@ module MXNet.Core.Base (
     , mxNDArrayGetData
     , mxNDArrayGetDType
     , mxNDArrayGetContext
+      -- * Functions on NDArray
     , mxListFunctions
     , mxGetFunction
     , mxFuncGetInfo
     , mxFuncDescribe
     , mxFuncInvoke
     , mxFuncInvokeEx
+      -- * Symbolic configuration generation.
     , mxSymbolListAtomicSymbolCreators
     , mxSymbolGetAtomicSymbolName
+    , mxSymbolGetAtomicSymbolInfo
+    , mxSymbolCreateAtomicSymbol
+    , mxSymbolCreateVariable
+    , mxSymbolCreateGroup
+    , mxSymbolCreateFromFile
+    , mxSymbolCreateFromJSON
+    , mxSymbolSaveToFile
+    , mxSymbolSaveToJSON
+    , mxSymbolFree
+    , mxSymbolCopy
+    , mxSymbolPrint
+    , mxSymbolGetName
+    , mxSymbolGetAttr
+    , mxSymbolSetAttr
+    , mxSymbolListAttr
+    , mxSymbolListAttrShallow
+    , mxSymbolListArguments
+    , mxSymbolListOutputs
+    , mxSymbolGetInternals
+    , mxSymbolGetOutput
+    , mxSymbolListAuxiliaryStates
     ) where
 
-import MXNet.Core.Internal.Raw
 import MXNet.Core.Internal.Types.Raw
+import MXNet.Core.Base.Internal.Raw

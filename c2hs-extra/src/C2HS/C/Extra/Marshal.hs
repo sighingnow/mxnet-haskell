@@ -34,6 +34,7 @@ peekString p = peek p >>= peekCString
 peekStringArray :: Integral n => n -> Ptr (Ptr CChar) -> IO [String]
 peekStringArray n p = peekArray (fromIntegral n) p >>= mapM peekCString
 
+{-# SPECIALIZE peekStringArray :: Int -> Ptr (Ptr CChar) -> IO [String] #-}
 {-# SPECIALIZE peekStringArray :: CUInt -> Ptr (Ptr CChar) -> IO [String] #-}
 
 -- | Use an array of string as argument, usually used to pass multiple names to C
