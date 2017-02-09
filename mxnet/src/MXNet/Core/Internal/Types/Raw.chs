@@ -135,29 +135,30 @@ instance Storable RtcHandle where
     peek p = fmap RtcHandle (peek (castPtr p))
     poke p (RtcHandle t) = poke (castPtr p) t
 
--- | Handle to a function that takes param and creates optimizer.
-{#pointer OptimizerCreator newtype #}
-
-instance Storable OptimizerCreator where
-    sizeOf (OptimizerCreator t) = sizeOf t
-    alignment (OptimizerCreator t) = alignment t
-    peek p = fmap OptimizerCreator (peek (castPtr p))
-    poke p (OptimizerCreator t) = poke (castPtr p) t
-
--- | Handle to Optimizer.
-{#pointer OptimizerHandle newtype #}
-
-instance Storable OptimizerHandle where
-    sizeOf (OptimizerHandle t) = sizeOf t
-    alignment (OptimizerHandle t) = alignment t
-    peek p = fmap OptimizerHandle (peek (castPtr p))
-    poke p (OptimizerHandle t) = poke (castPtr p) t
-
 -- | Callback: ExecutorMonitorCallback.
 {#pointer ExecutorMonitorCallback newtype #}
 
 -- | Callback: CustomOpPropCreator.
 {#pointer CustomOpPropCreator newtype #}
+
+-- | Callback: MXKVStoreUpdater, user-defined updater for the kvstore.
+type MXKVStoreUpdater = Int             -- ^ The key.
+                      -> NDArrayHandle  -- ^ The pushed value on the key.
+                      -> NDArrayHandle  -- ^ The value stored on local on the key.
+                      -> Ptr ()         -- ^ The additional handle to the updater.
+                      -> IO Int
+
+foreign import ccall "wrapper"
+    makeMXKVStoreUpdater :: MXKVStoreUpdater -> IO (FunPtr MXKVStoreUpdater)
+
+-- | Callback: MXKVStoreServerController, the prototype of a server controller.
+type MXKVStoreServerController = Int        -- ^ The head of the command.
+                               -> Ptr CChar -- ^ The body of the command.
+                               -> Ptr ()    -- ^ Helper handle for implementing controller.
+                               -> IO Int
+
+foreign import ccall "wrapper"
+    makeMXKVStoreServerController :: MXKVStoreServerController -> IO (FunPtr MXKVStoreServerController)
 
 {---------------------------------------------------------------------
 - <mxnet/c_predict_api.h>

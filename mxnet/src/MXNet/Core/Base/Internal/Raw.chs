@@ -36,6 +36,8 @@ import C2HS.C.Extra.Marshal
     {
     } -> `String' #}
 
+-------------------------------------------------------------------------------
+
 -- | Seed the global random number generators in mxnet.
 {#fun MXRandomSeed as mxRandomSeed
     { `Int'
@@ -45,6 +47,26 @@ import C2HS.C.Extra.Marshal
 {#fun MXNotifyShutdown as mxNotifyShutdown
     {
     } -> `Int' #}
+
+-- | Set up configuration of profiler.
+{#fun MXSetProfilerConfig as mxSetProfilerConfig
+    { `Int'         -- ^ Mode, indicate the working mode of profiler, record anly symbolic
+                    -- operator when mode == 0, record all operator when mode == 1.
+    , `String'      -- ^ Filename, where to save trace file.
+    } -> `Int' #}
+
+-- | Set up state of profiler.
+{#fun MXSetProfilerState as mxSetProfilerState
+    { `Int'         -- ^ State, indicate the working state of profiler, profiler not running
+                    -- when state == 0, profiler running when state == 1.
+    } -> `Int' #}
+
+-- | Save profile and stop profiler.
+{#fun MXDumpProfile as mxDumpProfile
+    {
+    } -> `Int' #}
+
+-------------------------------------------------------------------------------
 
 -- | Create a NDArray handle that is not initialized.
 {#fun MXNDArrayCreateNone as mxNDArrayCreateNone
@@ -175,7 +197,7 @@ mxNDArrayLoad fname = do
 {#fun MXNDArrayReshape as mxNDArrayReshape
     { id `NDArrayHandle'            -- ^ The handle to the NDArray.
     , `Int'                         -- ^ Number of dimensions of new shape.
-    , alloca- `Int' peekIntegral*
+    , withIntegralArray* `[Int]'    -- ^ New sizes of every dimension.
     , alloca- `NDArrayHandle' peek*
     } -> `Int' -- ^ The new shape data and the NDArrayHandle of reshaped NDArray.
     #}
@@ -215,6 +237,8 @@ mxNDArrayGetShape handle = do
     , alloca- `Int' peekIntegral*
     } -> `Int' -- ^ The device type and device id.
     #}
+
+-------------------------------------------------------------------------------
 
 {#fun MXListFunctions as mxListFunctionsImpl
     { alloca- `MXUInt' peek*
@@ -295,6 +319,11 @@ mxFuncGetInfo handle = do
     , withStringArray* `[String]'   -- ^ Keys for keyword parameters.
     , withStringArray* `[String]'   -- ^ Values for keyword parameters.
     } -> `Int' #}
+
+-- | Invoke a nnvm op and imperative function. FIXME
+mxImperativeInvoke = undefined
+
+-------------------------------------------------------------------------------
 
 {#fun MXSymbolListAtomicSymbolCreators as mxSymbolListAtomicSymbolCreatorsImpl
     { alloca- `MXUInt' peek*
@@ -528,3 +557,547 @@ mxSymbolListAuxiliaryStates symbol = do
     (res, n, p) <- mxSymbolListAuxiliaryStatesImpl symbol
     ss <- peekStringArray n p
     return (res, n, ss)
+
+-- | Compose the symbol on other symbols.
+{#fun MXSymbolCompose as mxSymbolCompose
+    { id `SymbolHandle'             -- ^ The symbol to apply.
+    , `String'                      -- ^ Name of the symbol.
+    , id `MXUInt'                   -- ^ Number of arguments.
+    , withStringArray* `[String]'   -- ^ Key of keyword arguments, optional.
+    , withArray* `[SymbolHandle]'   -- ^ Arguments.
+    } -> `Int' #}
+
+-- | Get the gradient graph of the symbol.
+{#fun MXSymbolGrad as mxSymbolGrad
+    { id `SymbolHandle'             -- ^ The symbol to get gradient.
+    , id `MXUInt'                   -- ^ Number of arguments to get gradient.
+    , withStringArray* `[String]'   -- ^ Names of the arguments to get gradient.
+    , alloca- `SymbolHandle' peek*
+    } -> `Int' -- ^ Return the symbol that has gradient.
+    #}
+
+{#fun MXSymbolInferShape as mxSymbolInferShapeImpl
+    { id `SymbolHandle'
+    , id `MXUInt'
+    , withStringArray* `[String]'
+    , id `Ptr MXUInt'
+    , id `Ptr MXUInt'
+    , alloca- `MXUInt' peek*
+    , alloca- `Ptr MXUInt' peek*
+    , alloca- `Ptr (Ptr MXUInt)' peek*
+    , alloca- `MXUInt' peek*
+    , alloca- `Ptr MXUInt' peek*
+    , alloca- `Ptr (Ptr MXUInt)' peek*
+    , alloca- `MXUInt' peek*
+    , alloca- `Ptr MXUInt' peek*
+    , alloca- `Ptr (Ptr MXUInt)' peek*
+    , alloca- `Int' peekIntegral*
+    } -> `Int' #}
+
+-- | Infer shape of unknown input shapes given the known one.
+mxSymbolInferShape :: SymbolHandle                          -- ^ Symbol handle.
+                   -> MXUInt                                -- ^ Number of input arguments.
+                   -> [String]                              -- ^ Number of input arguments.
+                   -> Ptr MXUInt                            -- ^ Keys of keyword arguments, optional.
+                   -> Ptr MXUInt                            -- ^ The head pointer of the rows in CSR
+                   -> IO (Int,
+                          (MXUInt, [MXUInt], [Ptr MXUInt]),
+                          (MXUInt, [MXUInt], [Ptr MXUInt]),
+                          (MXUInt, [MXUInt], [Ptr MXUInt]),
+                          Int)                              -- ^ Return the in, out and auxiliary
+                                                            -- shape size, ndim and data (array
+                                                            -- of pointers to head of the input
+                                                            -- shape), and whether infer shape
+                                                            -- completes or more information is
+                                                            -- needed.
+mxSymbolInferShape sym argc keys indptr shapedata = do
+    (res, in_size, in_ndim, in_data, out_size, out_ndim, out_data, aux_size, aux_ndim, aux_data, success) <- mxSymbolInferShapeImpl sym argc keys indptr shapedata
+    in_ndim' <- peekArray (fromIntegral in_size) in_ndim
+    in_data' <- peekArray (fromIntegral in_size) in_data
+    out_ndim' <- peekArray (fromIntegral out_size) out_ndim
+    out_data' <- peekArray (fromIntegral out_size) out_data
+    aux_ndim' <- peekArray (fromIntegral aux_size) aux_ndim
+    aux_data' <- peekArray (fromIntegral aux_size) aux_data
+    return (res, (in_size, in_ndim', in_data'), (out_size, out_ndim', out_data'), (aux_size, aux_ndim', aux_data'), success)
+
+{#fun MXSymbolInferShapePartial as mxSymbolInferShapePartialImpl
+    { id `SymbolHandle'
+    , id `MXUInt'
+    , withStringArray* `[String]'
+    , id `Ptr MXUInt'
+    , id `Ptr MXUInt'
+    , alloca- `MXUInt' peek*
+    , alloca- `Ptr MXUInt' peek*
+    , alloca- `Ptr (Ptr MXUInt)' peek*
+    , alloca- `MXUInt' peek*
+    , alloca- `Ptr MXUInt' peek*
+    , alloca- `Ptr (Ptr MXUInt)' peek*
+    , alloca- `MXUInt' peek*
+    , alloca- `Ptr MXUInt' peek*
+    , alloca- `Ptr (Ptr MXUInt)' peek*
+    , alloca- `Int' peekIntegral*
+    } -> `Int' #}
+
+-- | Partially infer shape of unknown input shapes given the known one.
+mxSymbolInferShapePartial
+    :: SymbolHandle                             -- ^ Symbol handle.
+    -> MXUInt                                   -- ^ Number of input arguments.
+    -> [String]                                 -- ^ Number of input arguments.
+    -> Ptr MXUInt                               -- ^ Keys of keyword arguments, optional.
+    -> Ptr MXUInt                               -- ^ The head pointer of the rows in CSR
+    -> IO (Int,
+           (MXUInt, [MXUInt], [Ptr MXUInt]),
+           (MXUInt, [MXUInt], [Ptr MXUInt]),
+           (MXUInt, [MXUInt], [Ptr MXUInt]),
+           Int)                                 -- ^ Return the in, out and auxiliary array's
+                                                -- shape size, ndim and data (array of pointers
+                                                -- to head of the input shape), and whether
+                                                -- infer shape completes or more information is
+                                                -- needed.
+mxSymbolInferShapePartial sym argc keys indptr shapedata = do
+    (res, in_size, in_ndim, in_data, out_size, out_ndim, out_data, aux_size, aux_ndim, aux_data, success) <- mxSymbolInferShapePartialImpl sym argc keys indptr shapedata
+    in_ndim' <- peekArray (fromIntegral in_size) in_ndim
+    in_data' <- peekArray (fromIntegral in_size) in_data
+    out_ndim' <- peekArray (fromIntegral out_size) out_ndim
+    out_data' <- peekArray (fromIntegral out_size) out_data
+    aux_ndim' <- peekArray (fromIntegral aux_size) aux_ndim
+    aux_data' <- peekArray (fromIntegral aux_size) aux_data
+    return (res, (in_size, in_ndim', in_data'), (out_size, out_ndim', out_data'), (aux_size, aux_ndim', aux_data'), success)
+
+-- | Infer type of unknown input types given the known one.
+{#fun MXSymbolInferType as mxSymbolInferType
+    { id `SymbolHandle'             -- ^ Symbol handle.
+    , id `MXUInt'                   -- ^ Number of input arguments.
+    , withStringArray* `[String]'   -- ^ Key of keyword arguments, optional.
+    , id `Ptr CInt'                 -- ^ The content of the CSR.
+    , alloca- `MXUInt' peek*
+    , alloca- `Ptr CInt'
+    , alloca- `MXUInt' peek*
+    , alloca- `Ptr CInt'
+    , alloca- `MXUInt' peek*
+    , alloca- `Ptr CInt'
+    , alloca- `Int' peekIntegral*
+    } -> `Int' -- ^ Return the size and an array of pointers to head the input, output and
+               -- auxiliary type, as well as whether infer type completes or more information
+               -- is needed.
+    #}
+
+-------------------------------------------------------------------------------
+
+-- | Delete the executor.
+{#fun MXExecutorFree as mxExecutorFree
+    { id `ExecutorHandle' -- ^ The executor handle.
+    } -> `Int' #}
+
+-- | Print the content of execution plan, used for debug.
+{#fun MXExecutorPrint as mxExecutorPrint
+    { id `ExecutorHandle'           -- ^ The executor handle.
+    , alloca- `String' peekString*  -- ^ Pointer to hold the output string of the printing.
+    } -> `Int' #}
+
+-- | Executor forward method.
+{#fun MXExecutorForward as mxExecutorForward
+    { id `ExecutorHandle'   -- ^ The executor handle.
+    , `Int'                 -- ^ int value to indicate whether the forward pass is for
+                            -- evaluation.
+    } -> `Int' #}
+
+-- | Excecutor run backward.
+{#fun MXExecutorBackward as mxExecutorBackward
+    { id `ExecutorHandle'           -- ^ The executor handle.
+    , id `MXUInt'                   -- ^ Length.
+    , withArray* `[NDArrayHandle]'  -- ^ NDArray handle for heads' gradient.
+    } -> `Int' #}
+
+{#fun MXExecutorOutputs as mxExecutorOutputsImpl
+    { id `ExecutorHandle'               -- ^ The executor handle.
+    , alloca- `MXUInt' peek*            -- ^ NDArray vector size.
+    , alloca- `Ptr NDArrayHandle' peek*
+    } -> `Int' #}
+
+-- | Get executor's head NDArray.
+mxExecutorOutputs :: ExecutorHandle             -- ^ The executor handle.
+                  -> IO (Int, [NDArrayHandle])  -- ^ The handles for outputs.
+mxExecutorOutputs handle = do
+    (r, c, p) <- mxExecutorOutputsImpl handle
+    handles <- peekArray (fromIntegral c) p
+    return (r, handles)
+
+-- | Generate Executor from symbol.
+{#fun MXExecutorBind as mxExecutorBind
+    { id `SymbolHandle'                 -- ^ The symbol handle.
+    , `Int'                             -- ^ Device type.
+    , `Int'                             -- ^ Device id.
+    , id `MXUInt'                       -- ^ Length of arrays in arguments.
+    , withArray* `[NDArrayHandle]'      -- ^ In array.
+    , withArray* `[NDArrayHandle]'      -- ^ Grads handle array.
+    , withArray* `[MXUInt]'             -- ^ Grad req array.
+    , id `MXUInt'                       -- ^ Length of auxiliary states.
+    , withArray* `[NDArrayHandle]'      -- ^ Auxiliary states array.
+    , alloca- `ExecutorHandle' peek*    -- ^ Output executor handle.
+    } -> `Int' #}
+
+-- | Generate Executor from symbol. This is advanced function, allow specify group2ctx map.
+-- The user can annotate "ctx_group" attribute to name each group.
+{#fun MXExecutorBindX as mxExecutorBindX
+    { id `SymbolHandle'                 -- ^ The symbol handle.
+    , `Int'                             -- ^ Device type of default context.
+    , `Int'                             -- ^ Device id of default context.
+    , id `MXUInt'                       -- ^ Size of group2ctx map.
+    , withStringArray* `[String]'       -- ^ Keys of group2ctx map.
+    , withIntegralArray* `[Int]'        -- ^ Device type of group2ctx map.
+    , withIntegralArray* `[Int]'        -- ^ Device id of group2ctx map.
+    , id `MXUInt'                       -- ^ Length of arrays in arguments.
+    , withArray* `[NDArrayHandle]'      -- ^ In array.
+    , withArray* `[NDArrayHandle]'      -- ^ Grads handle array.
+    , withArray* `[MXUInt]'             -- ^ Grad req array.
+    , id `MXUInt'                       -- ^ Length of auxiliary states.
+    , withArray* `[NDArrayHandle]'      -- ^ Auxiliary states array.
+    , alloca- `ExecutorHandle' peek*    -- ^ Output executor handle.
+    } -> `Int' #}
+
+-- | Generate Executor from symbol. This is advanced function, allow specify group2ctx map.
+-- The user can annotate "ctx_group" attribute to name each group.
+{#fun MXExecutorBindEX as mxExecutorBindEX
+    { id `SymbolHandle'                 -- ^ The symbol handle.
+    , `Int'                             -- ^ Device type of default context.
+    , `Int'                             -- ^ Device id of default context.
+    , id `MXUInt'                       -- ^ Size of group2ctx map.
+    , withStringArray* `[String]'       -- ^ Keys of group2ctx map.
+    , withIntegralArray* `[Int]'        -- ^ Device type of group2ctx map.
+    , withIntegralArray* `[Int]'        -- ^ Device id of group2ctx map.
+    , id `MXUInt'                       -- ^ Length of arrays in arguments.
+    , withArray* `[NDArrayHandle]'      -- ^ In array.
+    , withArray* `[NDArrayHandle]'      -- ^ Grads handle array.
+    , withArray* `[MXUInt]'             -- ^ Grad req array.
+    , id `MXUInt'                       -- ^ Length of auxiliary states.
+    , withArray* `[NDArrayHandle]'      -- ^ Auxiliary states array.
+    , id `ExecutorHandle'               -- ^ Input executor handle for memory sharing.
+    , alloca- `ExecutorHandle' peek*    -- ^ Output executor handle.
+    } -> `Int' #}
+
+-- | Set a call back to notify the completion of operation.
+{#fun MXExecutorSetMonitorCallback as mxExecutorSetMonitorCallback
+    { id `ExecutorHandle'           -- ^ The executor handle.
+    , id `ExecutorMonitorCallback'
+    , id `Ptr ()'
+    } -> `Int' #}
+
+-------------------------------------------------------------------------------
+
+{#fun MXListDataIters as mxListDataItersImpl
+    { alloca- `MXUInt' peek*
+    , alloca- `Ptr DataIterCreator' peek*
+    } -> `Int' #}
+
+-- | List all the available iterator entries.
+mxListDataIters :: IO (Int, [DataIterCreator]) -- ^ The output iterator entries.
+mxListDataIters = do
+    (res, c, p) <- mxListDataItersImpl
+    creators <- peekArray (fromIntegral c) p
+    return (res, creators)
+
+-- | Init an iterator, init with parameters the array size of passed in arguments.
+{#fun MXDataIterCreateIter as mxDataIterCreateIter
+    { id `DataIterCreator'              -- ^ The handle pointer to the data iterator.
+    , id `MXUInt'                       -- ^ Size of arrays in arguments.
+    , withStringArray* `[String]'       -- ^ Parameter keys.
+    , withStringArray* `[String]'       -- ^ Parameter values.
+    , alloca- `DataIterHandle' peek*    -- ^ Resulting iterator.
+    } -> `Int' #}
+
+{#fun MXDataIterGetIterInfo as mxDataIterGetIterInfoImpl
+    { id `DataIterCreator'              -- ^ The handle pointer to the data iterator.
+    , alloca- `String' peekString*
+    , alloca- `String' peekString*
+    , alloca- `MXUInt' peek*
+    , alloca- `Ptr (Ptr CChar)' peek*
+    , alloca- `Ptr (Ptr CChar)' peek*
+    , alloca- `Ptr (Ptr CChar)' peek*
+    } -> `Int' #}
+
+-- | Get the detailed information about data iterator.
+mxDataIterGetIterInfo :: DataIterCreator                    -- ^ The handle pointer to the
+                                                            -- data iterator.
+                      -> IO (Int, String, String,
+                             MXUInt,
+                             [String], [String], [String])  -- ^ Return the name and description
+                                                            -- of the data iter creator,
+                                                            -- the name, type and description of
+                                                            -- it's arguments, as well as the
+                                                            -- return type of this symbol.
+mxDataIterGetIterInfo creator = do
+    (res, name, desc, argc, argv, argtype, argdesc) <- mxDataIterGetIterInfoImpl creator
+    argv' <- peekStringArray argc argv
+    argtype' <- peekStringArray argc argtype
+    argdesc' <- peekStringArray argc argdesc
+    return (res, name, desc, argc, argv', argtype', argdesc')
+
+-- | Get the detailed information about data iterator.
+
+-- | Free the handle to the IO module.
+{#fun MXDataIterFree as mxDataIterFree
+    { id `DataIterHandle'   -- ^ The handle pointer to the data iterator.
+    } -> `Int' #}
+
+-- | Move iterator to next position.
+{#fun MXDataIterNext as mxDataIterNext
+    { id `DataIterHandle'           -- ^ The handle pointer to the data iterator.
+    , alloca- `Int' peekIntegral*   -- ^ Return value of next.
+    } -> `Int' #}
+
+-- | Call iterator.Reset.
+{#fun MXDataIterBeforeFirst as mxDataIterBeforeFirst
+    { id `DataIterHandle'   -- ^ The handle pointer to the data iterator.
+    } -> `Int' #}
+
+-- | Get the handle to the NDArray of underlying data.
+{#fun MXDataIterGetData as mxDataIterGetData
+    { id `DataIterHandle'           -- ^ The handle pointer to the data iterator.
+    , alloca- `NDArrayHandle' peek* -- ^ Handle to the underlying data NDArray.
+    } -> `Int' #}
+
+{#fun MXDataIterGetIndex as mxDataIterGetIndexImpl
+    { id `DataIterHandle'               -- ^ The handle pointer to the data iterator.
+    , alloca- `Ptr CULLong' peek*       -- ^ The output indices.
+    , alloca- `CULLong' peekIntegral*   -- ^ Size of output array.
+    } -> `Int' #}
+
+-- | Get the image index by array.
+mxDataIterGetIndex :: DataIterHandle        -- ^ The handle pointer to the data iterator.
+                   -> IO (Int, [CULLong])   -- ^ Output indices of the array.
+mxDataIterGetIndex creator = do
+    (res, p, c) <- mxDataIterGetIndexImpl creator
+    indices <- peekArray (fromIntegral c) p
+    return (res, indices)
+
+-- | Get the padding number in current data batch.
+{#fun MXDataIterGetPadNum as mxDataIterGetPadNum
+    { id `DataIterHandle'           -- ^ The handle pointer to the data iterator.
+    , alloca- `Int' peekIntegral*   -- ^ Pad number.
+    } -> `Int' #}
+
+-- | Get the handle to the NDArray of underlying label.
+{#fun MXDataIterGetLabel as mxDataIterGetLabel
+    { id `DataIterHandle'           -- ^ The handle pointer to the data iterator.
+    , alloca- `NDArrayHandle' peek* -- ^ The handle to underlying label NDArray.
+    } -> `Int' #}
+
+-------------------------------------------------------------------------------
+
+-- | Initialized ps-lite environment variables.
+{#fun MXInitPSEnv as mxInitPSEnv
+    { id `MXUInt'                   -- ^ Number of variables to initialize.
+    , withStringArray* `[String]'   -- ^ Environment keys.
+    , withStringArray* `[String]'   -- ^ Environment values.
+    } -> `Int' #}
+
+-- | Create a kvstore.
+{#fun MXKVStoreCreate as mxKVStoreCreate
+    { `String'                      -- ^ The type of KVStore.
+    , alloca- `KVStoreHandle' peek* -- ^ The output KVStore.
+    } -> `Int' #}
+
+-- | Delete a KVStore handle.
+{#fun MXKVStoreFree as mxKVStoreFree
+    { id `KVStoreHandle'    -- ^ Handle to the kvstore.
+    } -> `Int' #}
+
+-- | Init a list of (key,value) pairs in kvstore.
+{#fun MXKVStoreInit as mxKVStoreInit
+    { id `KVStoreHandle'            -- ^ Handle to the kvstore.
+    , id `MXUInt'                   -- ^ The number of key-value pairs.
+    , withIntegralArray* `[Int]'    -- ^ The list of keys.
+    , withArray* `[NDArrayHandle]'  -- ^ The list of values.
+    } -> `Int' #}
+
+-- | Push a list of (key,value) pairs to kvstore.
+{#fun MXKVStorePush as mxKVStorePush
+    { id `KVStoreHandle'            -- ^ Handle to the kvstore.
+    , id `MXUInt'                   -- ^ The number of key-value pairs.
+    , withIntegralArray* `[Int]'    -- ^ The list of keys.
+    , withArray* `[NDArrayHandle]'  -- ^ The list of values.
+    , `Int'                         -- ^ The priority of the action.
+    } -> `Int' #}
+
+-- | FIXME Pull a list of (key, value) pairs from the kvstore.
+{#fun MXKVStorePull as mxKVStorePull
+    { id `KVStoreHandle'            -- ^ Handle to the kvstore.
+    , id `MXUInt'                   -- ^ The number of key-value pairs.
+    , withIntegralArray* `[Int]'    -- ^ The list of keys.
+    , withArray* `[NDArrayHandle]'  -- ^ The list of values.
+    , `Int'                         -- ^ The priority of the action.
+    } -> `Int' #}
+
+-- | FIXME Register an push updater.
+mxKVStoreSetUpdater = undefined
+{-
+{#fun  as
+    { id `KVStoreHandle'
+    , id `MXUInt'
+    } -> `Int' #}
+-}
+
+-- | Get the type of the kvstore.
+{#fun MXKVStoreGetType as mxKVStoreGetType
+    { id `KVStoreHandle'                -- ^ Handle to the KVStore.
+    , alloca- `String' peekString*   -- ^ A string type.
+    } -> `Int' #}
+
+-------------------------------------------------------------------------------
+
+-- | The rank of this node in its group, which is in [0, GroupSize).
+{#fun MXKVStoreGetRank as mxKVStoreGetRank
+    { id `KVStoreHandle'            -- ^ Handle to the KVStore.
+    , alloca- `Int' peekIntegral*   -- ^ The node rank.
+    } -> `Int' #}
+
+-- | The number of nodes in this group, which is
+--
+--      * number of workers if if `IsWorkerNode() == true`,
+--      * number of servers if if `IsServerNode() == true`,
+--      * 1 if `IsSchedulerNode() == true`.
+{#fun MXKVStoreGetGroupSize as mxKVStoreGetGroupSize
+    { id `KVStoreHandle'            -- ^ Handle to the KVStore.
+    , alloca- `Int' peekIntegral*   -- ^ The group size.
+    } -> `Int' #}
+
+-- | Return whether or not this process is a worker node.
+{#fun MXKVStoreIsWorkerNode as mxKVStoreIsWorkerNode
+    { alloca- `Int' peekIntegral*   -- ^ Return 1 for yes, 0 for no.
+    } -> `Int' #}
+
+-- | Return whether or not this process is a server node.
+{#fun MXKVStoreIsServerNode as mxKVStoreIsServerNode
+    { alloca- `Int' peekIntegral*   -- ^ Return 1 for yes, 0 for no.
+    } -> `Int' #}
+
+-- | Return whether or not this process is a scheduler node.
+{#fun MXKVStoreIsSchedulerNode as mxKVStoreIsSchedulerNode
+    { alloca- `Int' peekIntegral*   -- ^ Return 1 for yes, 0 for no.
+    } -> `Int' #}
+
+-- | Global barrier among all worker machines.
+{#fun MXKVStoreBarrier as mxKVStoreBarrier
+    { id `KVStoreHandle'    -- ^ Handle to the KVStore.
+    } -> `Int' #}
+
+-- | Whether to do barrier when finalize.
+{#fun MXKVStoreSetBarrierBeforeExit as mxKVStoreSetBarrierBeforeExit
+    { id `KVStoreHandle'    -- ^ Handle to the KVStore.
+    , `Int'                 -- ^ Whether to do barrier when kvstore finalize
+    } -> `Int' #}
+
+-- | FIXME  Run as server (or scheduler).
+mxKVStoreRunServer = undefined
+{-
+{#fun MXKVStoreRunServer as mxKVStoreRunServer
+    { id `KVStoreHandle'
+    , id `MXUInt'
+    } -> `Int' #}
+-}
+
+-- | Send a command to all server nodes.
+{#fun MXKVStoreSendCommmandToServers as mxKVStoreSendCommmandToServers
+    { id `KVStoreHandle'    -- ^ Handle to the KVStore.
+    , `Int'                 -- ^ The head of the command.
+    , `String'              -- ^ The body of the command.
+    } -> `Int' #}
+
+-- | Get the number of ps dead node(s) specified by {node_id}.
+{#fun MXKVStoreGetNumDeadNode as mxKVStoreGetNumDeadNode
+    { id `KVStoreHandle'            -- ^ Handle to the kvstore.
+    , `Int'                         -- ^ node id, can be a node group or a single node.
+                                    -- kScheduler = 1, kServerGroup = 2, kWorkerGroup = 4
+    , alloca- `Int' peekIntegral*   -- ^ Ouptut number of dead nodes.
+    , `Int'                         -- ^ A node fails to send heartbeart in {timeout_sec}
+                                    -- seconds will be presumed as 'dead'
+    } -> `Int' #}
+
+-- | Create a RecordIO writer object.
+{#fun MXRecordIOWriterCreate as mxRecordIOWriterCreate
+    { `String'                          -- ^ Path to file.
+    , alloca- `RecordIOHandle' peek*    -- ^ The created object.
+    } -> `Int' #}
+
+-- | Delete a RecordIO writer object.
+{#fun MXRecordIOWriterFree as mxRecordIOWriterFree
+    { id `RecordIOHandle'   -- ^ Handle to RecordIO object.
+    } -> `Int' #}
+
+-- | Write a record to a RecordIO object.
+{#fun MXRecordIOWriterWriteRecord as mxRecordIOWriterWriteRecord
+    { id `RecordIOHandle'   -- ^ Handle to RecordIO object.
+    , id `Ptr CChar'        -- ^ Buffer to write.
+    , `CSize'               -- ^ Size of buffer.
+    } -> `Int' #}
+
+-- | Get the current writer pointer position.
+{#fun MXRecordIOWriterTell as mxRecordIOWriterTell
+    { id `RecordIOHandle'   -- ^ Handle to RecordIO object.
+    , id `Ptr CSize'        -- ^ Handle to output position.
+    } -> `Int' #}
+
+-- | Create a RecordIO reader object.
+{#fun MXRecordIOReaderCreate as mxRecordIOReaderCreate
+    { `String'                          -- ^ Path to file.
+    , alloca- `RecordIOHandle' peek*    -- ^ Handle pointer to the created object.
+    } -> `Int' #}
+
+-- | Delete a RecordIO reader object.
+{#fun MXRecordIOReaderFree as mxRecordIOReaderFree
+    { id `RecordIOHandle'   -- ^ Handle to RecordIO object.
+    } -> `Int' #}
+
+
+-- | Write a record to a RecordIO object.
+{#fun MXRecordIOReaderReadRecord as mxRecordIOReaderReadRecord
+    { id `RecordIOHandle'   -- ^ Handle to RecordIO object.
+    , id `Ptr (Ptr CChar)'  -- ^ Pointer to return buffer.
+    , alloca- `CSize' peek* -- ^ Size of buffer.
+    } -> `Int' #}
+
+-- | Set the current reader pointer position.
+{#fun MXRecordIOReaderSeek as mxRecordIOReaderSeek
+    { id `RecordIOHandle'   -- ^ Handle to RecordIO object.
+    , id `CSize'            -- ^ Target position.
+    } -> `Int' #}
+
+-- | Create a MXRtc object.
+{#fun MXRtcCreate as mxRtcCreate
+    { `String'          -- ^ Name.
+    , id `MXUInt'                   -- ^ Number of inputs.
+    , id `MXUInt'                   -- ^ Number of outputs.
+    , withStringArray* `[String]'   -- ^ Input names.
+    , withStringArray* `[String]'   -- ^ Output names.
+    , withArray* `[NDArrayHandle]'  -- ^ Inputs.
+    , withArray* `[NDArrayHandle]'  -- ^ Outputs.
+    , id `Ptr CChar'                -- ^ Kernel.
+    , alloca- `RtcHandle' peek*     -- ^ The result RTC handle.
+    } -> `Int' #}
+
+-- | Run cuda kernel.
+{#fun MXRtcPush as mxRtcPush
+    { id `RtcHandle'                -- ^ Handle.
+    , id `MXUInt'                   -- ^ Number of inputs.
+    , id `MXUInt'                   -- ^ Number of outputs.
+    , withArray* `[NDArrayHandle]'  -- ^ Inputs.
+    , withArray* `[NDArrayHandle]'  -- ^ Outputs.
+    , id `MXUInt'                   -- ^ Grid dim x
+    , id `MXUInt'                   -- ^ Grid dim y
+    , id `MXUInt'                   -- ^ Grid dim z
+    , id `MXUInt'                   -- ^ Block dim x
+    , id `MXUInt'                   -- ^ Block dim y
+    , id `MXUInt'                   -- ^ Block dim z
+    } -> `Int' #}
+
+-- | Delete a MXRtc object.
+{#fun MXRtcFree as mxRtcFree
+    { id `RtcHandle'
+    } -> `Int' #}
+
+-- |
+{#fun MXCustomOpRegister as mxCustomOpRegister
+    { `String'                  -- ^ op type.
+    , id `CustomOpPropCreator'
+    } -> `Int' #}

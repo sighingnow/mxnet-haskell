@@ -24,16 +24,19 @@ module MXNet.Core.Base (
     , KVStoreHandle
     , RecordIOHandle
     , RtcHandle
-    , OptimizerCreator
-    , OptimizerHandle
       -- ** Callback types
     , ExecutorMonitorCallback
     , CustomOpPropCreator
+    , MXKVStoreUpdater
+    , MXKVStoreServerController
       -- * Error handling.
     , mxGetLastError
       -- * Global State setups
     , mxRandomSeed
     , mxNotifyShutdown
+    , mxSetProfilerConfig
+    , mxSetProfilerState
+    , mxDumpProfile
       -- * NDArray creation and deletion
     , mxNDArrayCreateNone
     , mxNDArrayCreate
@@ -62,7 +65,8 @@ module MXNet.Core.Base (
     , mxFuncDescribe
     , mxFuncInvoke
     , mxFuncInvokeEx
-      -- * Symbolic configuration generation.
+    , mxImperativeInvoke
+      -- * Symbolic configuration generation
     , mxSymbolListAtomicSymbolCreators
     , mxSymbolGetAtomicSymbolName
     , mxSymbolGetAtomicSymbolInfo
@@ -86,6 +90,64 @@ module MXNet.Core.Base (
     , mxSymbolGetInternals
     , mxSymbolGetOutput
     , mxSymbolListAuxiliaryStates
+    , mxSymbolCompose
+    , mxSymbolGrad
+    , mxSymbolInferShape
+    , mxSymbolInferShapePartial
+    , mxSymbolInferType
+      -- * Executor interface
+    , mxExecutorFree
+    , mxExecutorPrint
+    , mxExecutorForward
+    , mxExecutorBackward
+    , mxExecutorOutputs
+    , mxExecutorBind
+    , mxExecutorBindX
+    , mxExecutorBindEX
+    , mxExecutorSetMonitorCallback
+      -- * IO Interface
+    , mxListDataIters
+    , mxDataIterCreateIter
+    , mxDataIterGetIterInfo
+    , mxDataIterFree
+    , mxDataIterNext
+    , mxDataIterBeforeFirst
+    , mxDataIterGetData
+    , mxDataIterGetIndex
+    , mxDataIterGetPadNum
+    , mxDataIterGetLabel
+      -- * Basic KVStore interface
+    , mxInitPSEnv
+    , mxKVStoreCreate
+    , mxKVStoreFree
+    , mxKVStoreInit
+    , mxKVStorePush
+    , mxKVStorePull
+    , mxKVStoreSetUpdater
+    , mxKVStoreGetType
+      -- * Advanced KVStore for multi-machines
+    , mxKVStoreGetRank
+    , mxKVStoreGetGroupSize
+    , mxKVStoreIsWorkerNode
+    , mxKVStoreIsServerNode
+    , mxKVStoreIsSchedulerNode
+    , mxKVStoreBarrier
+    , mxKVStoreSetBarrierBeforeExit
+    , mxKVStoreRunServer
+    , mxKVStoreSendCommmandToServers
+    , mxKVStoreGetNumDeadNode
+    , mxRecordIOWriterCreate
+    , mxRecordIOWriterFree
+    , mxRecordIOWriterWriteRecord
+    , mxRecordIOWriterTell
+    , mxRecordIOReaderCreate
+    , mxRecordIOReaderFree
+    , mxRecordIOReaderReadRecord
+    , mxRecordIOReaderSeek
+    , mxRtcCreate
+    , mxRtcPush
+    , mxRtcFree
+    , mxCustomOpRegister
     ) where
 
 import MXNet.Core.Internal.Types.Raw
