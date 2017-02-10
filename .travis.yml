@@ -38,7 +38,7 @@ before_install:
   - cp -f ~/mxnet/lib/libmxnet.so ~/.local/lib/
   - export LIBRARY_PATH=~/.local/lib:$LD_LIBRARY_PATH
   - export LD_LIBRARY_PATH=~/.local/lib:$LD_LIBRARY_PATH
-  - export MXNET_INCLUDE_PATH=~/mxnet/include:~/mxnet/nnvm/include:~/mxnet/dmlc-core/include
+  - export C_INCLUDE_PATH=~/mxnet/include:~/mxnet/nnvm/include:~/mxnet/dmlc-core/include:$C_INCLUDE_PATH
   # Set up haskell environment.
   - mkdir -p ~/.local/bin
   - export PATH=~/.local/bin:$PATH
@@ -49,4 +49,5 @@ install:
   - stack setup --resolver $RESOLVER
 
 script:
-  - stack --resolver $RESOLVER build --bench --test --coverage --haddock --no-haddock-deps --extra-include-dirs $MXNET_INCLUDE_PATH
+  - cd $TRAVIS_BUILD_DIR
+  - stack --resolver $RESOLVER build --bench --test --coverage --haddock --no-haddock-deps
