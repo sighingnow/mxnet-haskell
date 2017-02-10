@@ -67,6 +67,7 @@ module MXNet.Core.Base (
     , mxFuncInvokeEx
     , mxImperativeInvoke
       -- * Symbolic configuration generation
+    , mxListAllOpNames
     , mxSymbolListAtomicSymbolCreators
     , mxSymbolGetAtomicSymbolName
     , mxSymbolGetAtomicSymbolInfo

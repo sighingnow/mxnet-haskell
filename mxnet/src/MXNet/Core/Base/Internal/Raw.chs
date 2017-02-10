@@ -325,6 +325,18 @@ mxImperativeInvoke = undefined
 
 -------------------------------------------------------------------------------
 
+{#fun MXListAllOpNames as mxListAllOpNamesImpl
+    { alloca- `MXUInt' peek*
+    , alloca- `Ptr (Ptr CChar)' peek*
+    } -> `Int' #}
+
+-- | List all the available operator names, include entries.
+mxListAllOpNames :: IO (Int, MXUInt, [String])
+mxListAllOpNames = do
+    (res, n, p) <- mxListAllOpNamesImpl
+    names <- peekStringArray (fromIntegral n) p
+    return (res, n, names)
+
 {#fun MXSymbolListAtomicSymbolCreators as mxSymbolListAtomicSymbolCreatorsImpl
     { alloca- `MXUInt' peek*
     , alloca- `Ptr AtomicSymbolCreator' peek*
