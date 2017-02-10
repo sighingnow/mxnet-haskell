@@ -76,8 +76,8 @@ import C2HS.C.Extra.Marshal
 
 -- | Create a NDArray with specified shape.
 {#fun MXNDArrayCreate as mxNDArrayCreate
-    { withArray* `[MXUInt]'
-    , id `MXUInt'
+    { withArray* `[MXUInt]'         -- ^ The shape of NDArray.
+    , id `MXUInt'                   -- ^ The dimension of the shape.
     , `Int'                         -- ^ Device type, specify device we want to take.
     , `Int'                         -- ^ The device id of the specific device.
     , `Int'                         -- ^ Whether to delay allocation until.

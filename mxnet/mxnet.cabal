@@ -14,6 +14,7 @@ cabal-version:              >= 1.10
 Library
     exposed-modules:
         MXNet.Core.Base
+        MXNet.Core.NDArray
         MXNet.Core.Predict.Base
     other-modules:
         MXNet.Core.Internal.Types.Raw
