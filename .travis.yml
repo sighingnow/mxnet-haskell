@@ -1,0 +1,45 @@
+language: haskell
+
+cache:
+  directories:
+    - $HOME/.ghc
+    - $HOME/.stack/
+    - $TRAVIS_BUILD_DIR/.stack-work/
+
+# dependent apt packages.
+addons:
+  apt:
+    packages:
+      - git
+      - gcc
+      - g++
+      - libopenblas-dev
+      - libopencv-dev
+
+matrix:
+  include:
+  - env: BUILD=stack RESOLVER="lts-6.25"
+    compiler: "#stack GHC-7.10.3"
+  - env: BUILD=stack RESOLVER="lts-7.9"
+    compiler: "#stack GHC-8.0.1"
+
+before_install:
+  # Build mxnet library.
+  - git clone https://github.com/dmlc/mxnet.git ~/mxnet --recursive
+  - cd ~/mxnet && git checkout v0.9.3 && make && cd ~
+  - mkdir -p ~/.local/lib
+  - cp -f lib/libmxnet.so ~/.local/lib/
+  - export LIBRARY_PATH=~/.local/lib:$LD_LIBRARY_PATH
+  - export LD_LIBRARY_PATH=~/.local/lib:$LD_LIBRARY_PATH
+  - export MXNET_INCLUDE_PATH=~/mxnet/include:~/mxnet/nnvm/include:~/mxnet/dmlc-core/include
+  # Set up haskell environment.
+  - mkdir -p ~/.local/bin
+  - export PATH=~/.local/bin:$PATH
+  - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+  - chmod +x ~/.local/bin/stack
+
+install:
+  - stack setup --resolver $RESOLVER
+
+script:
+  - stack --resolver $RESOLVER build --bench --test --coverage --haddock --no-haddock-deps --extra-include-dirs $MXNET_INCLUDE_PATH
