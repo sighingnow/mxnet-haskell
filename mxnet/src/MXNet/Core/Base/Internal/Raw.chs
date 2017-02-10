@@ -857,15 +857,27 @@ mxDataIterGetIterInfo creator = do
     , alloca- `NDArrayHandle' peek* -- ^ Handle to the underlying data NDArray.
     } -> `Int' #}
 
+#ifdef mingw32_HOST_OS
 {#fun MXDataIterGetIndex as mxDataIterGetIndexImpl
     { id `DataIterHandle'               -- ^ The handle pointer to the data iterator.
     , alloca- `Ptr CULLong' peek*       -- ^ The output indices.
     , alloca- `CULLong' peekIntegral*   -- ^ Size of output array.
     } -> `Int' #}
+#else
+{#fun MXDataIterGetIndex as mxDataIterGetIndexImpl
+    { id `DataIterHandle'               -- ^ The handle pointer to the data iterator.
+    , alloca- `Ptr CULong' peek*        -- ^ The output indices.
+    , alloca- `CULong' peekIntegral*    -- ^ Size of output array.
+    } -> `Int' #}
+#endif
 
 -- | Get the image index by array.
 mxDataIterGetIndex :: DataIterHandle        -- ^ The handle pointer to the data iterator.
+#ifdef mingw32_HOST_OS
                    -> IO (Int, [CULLong])   -- ^ Output indices of the array.
+#else
+                   -> IO (Int, [CULong])    -- ^ Output indices of the array.
+#endif
 mxDataIterGetIndex creator = do
     (res, p, c) <- mxDataIterGetIndexImpl creator
     indices <- peekArray (fromIntegral c) p
