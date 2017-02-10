@@ -4,9 +4,10 @@ synopsis:                   MXNet interface in Haskell.
 description:                MXNet interface in Haskell via CFFI.
 homepage:                   http://github.com/sighingnow/mxnet-haskell#readme
 license:                    MIT
+license-file:               LICENSE
 author:                     Tao He
 maintainer:                 sighingnow@gmail.com
-copyright:                  Copyright: (c) 2016 Tao He
+copyright:                  Copyright: (c) 2016-2017 Tao He
 category:                   Machine Learning
 build-type:                 Simple
 cabal-version:              >= 1.10
