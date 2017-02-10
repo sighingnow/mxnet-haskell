@@ -1,11 +1,11 @@
 -----------------------------------------------------------
 -- |
--- module:                      MXNet.NNVM.Base.Internal.Raw
--- copyright:                   (c) 2016 Tao He
+-- module:                      MXNet.Core.NNVM.Base.Internal.Raw
+-- copyright:                   (c) 2016-2017 Tao He
 -- license:                     MIT
 -- maintainer:                  sighingnow@gmail.com
 --
--- Direct C FFI bindings for <mxnet/c_api.h>.
+-- Direct C FFI bindings for <nnvm/c_api.h>.
 --
 #if __GLASGOW_HASKELL__ >= 709
 {-# LANGUAGE Safe #-}
@@ -14,7 +14,7 @@
 #endif
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module MXNet.NNVM.Base.Internal.Raw where
+module MXNet.Core.NNVM.Base.Internal.Raw where
 
 import Foreign.C.String
 import Foreign.C.Types
@@ -26,7 +26,7 @@ import Foreign.Storable
 
 import C2HS.C.Extra.Marshal
 
-{#import MXNet.NNVM.Internal.Types.Raw #}
+{#import MXNet.Core.Internal.Types.Raw #}
 
 #include <nnvm/c_api.h>
 

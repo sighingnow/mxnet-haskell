@@ -20,6 +20,7 @@ import Foreign.C.Types
 import Foreign.Ptr
 import Foreign.Storable
 
+#include <nnvm/c_api.h>
 #include <mxnet/c_api.h>
 #include <mxnet/c_predict_api.h>
 
@@ -27,14 +28,60 @@ import Foreign.Storable
 {#typedef size_t CSize#}
 
 {---------------------------------------------------------------------
-- <mxnet/c_api.h>
+- Primitive type alias.
 ---------------------------------------------------------------------}
+
+-- | NNUint type alias.
+type NNUInt = CUInt
 
 -- | MXUint type alias.
 type MXUInt = CUInt
 
 -- | MXFloat type alias.
 type MXFloat = CFloat
+
+{---------------------------------------------------------------------
+- <nnvm/c_api.h>
+---------------------------------------------------------------------}
+
+-- | Handle to a function that takes param and creates symbol.
+
+{#pointer OpHandle #}
+
+{- FIXME maybe a bug from c2hs, when make a type alias of OpHandle, the
+   generated CFFI function will not be correct.
+
+{#pointer OpHandle newtype #}
+
+instance Storable OpHandle where
+    sizeOf (OpHandle t) = sizeOf t
+    alignment (OpHandle t) = alignment t
+    peek p = fmap OpHandle (peek (castPtr p))
+    poke p (OpHandle t) = poke (castPtr p) t
+
+--}
+
+-- | Handle to a symbol that can be bind as operator.
+{#pointer SymbolHandle newtype #}
+
+instance Storable SymbolHandle where
+    sizeOf (SymbolHandle t) = sizeOf t
+    alignment (SymbolHandle t) = alignment t
+    peek p = fmap SymbolHandle (peek (castPtr p))
+    poke p (SymbolHandle t) = poke (castPtr p) t
+
+-- | Handle to Graph.
+{#pointer GraphHandle newtype #}
+
+instance Storable GraphHandle where
+    sizeOf (GraphHandle t) = sizeOf t
+    alignment (GraphHandle t) = alignment t
+    peek p = fmap GraphHandle (peek (castPtr p))
+    poke p (GraphHandle t) = poke (castPtr p) t
+
+{---------------------------------------------------------------------
+- <mxnet/c_api.h>
+---------------------------------------------------------------------}
 
 -- | Handle to NDArray.
 {#pointer NDArrayHandle newtype #}
@@ -55,22 +102,7 @@ instance Storable FunctionHandle where
     poke p (FunctionHandle t) = poke (castPtr p) t
 
 -- | Handle to a function that takes param and creates symbol.
-{#pointer AtomicSymbolCreator newtype #}
-
-instance Storable AtomicSymbolCreator where
-    sizeOf (AtomicSymbolCreator t) = sizeOf t
-    alignment (AtomicSymbolCreator t) = alignment t
-    peek p = fmap AtomicSymbolCreator (peek (castPtr p))
-    poke p (AtomicSymbolCreator t) = poke (castPtr p) t
-
--- | Handle to a symbol that can be bind as operator.
-{#pointer SymbolHandle newtype #}
-
-instance Storable SymbolHandle where
-    sizeOf (SymbolHandle t) = sizeOf t
-    alignment (SymbolHandle t) = alignment t
-    peek p = fmap SymbolHandle (peek (castPtr p))
-    poke p (SymbolHandle t) = poke (castPtr p) t
+type AtomicSymbolCreator = OpHandle
 
 -- | Handle to a AtomicSymbol.
 {#pointer AtomicSymbolHandle newtype #}

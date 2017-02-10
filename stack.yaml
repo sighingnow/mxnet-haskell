@@ -4,7 +4,6 @@ packages:
 - c2hs-extra
 - mxnet
 - mxnet-examples
-- mxnet-nnvm
 
 extra-deps:
 
