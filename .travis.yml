@@ -17,6 +17,7 @@ addons:
     - gcc-4.8
     - g++-4.8
     - libatlas-dev
+    - libatlas-base-dev
     - libopencv-dev
 
 matrix:
