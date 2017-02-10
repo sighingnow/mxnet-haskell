@@ -1,5 +1,5 @@
 name:                       mxnet
-version:                    0.1.0.0
+version:                    0.1.0.1
 synopsis:                   MXNet interface in Haskell.
 description:                MXNet interface in Haskell via CFFI.
 homepage:                   http://github.com/sighingnow/mxnet-haskell#readme
