@@ -366,27 +366,27 @@ mxSymbolListAtomicSymbolCreators = do
     , alloca- `Ptr (Ptr CChar)' peek*
     , alloca- `Ptr (Ptr CChar)' peek*
     , alloca- `Ptr (Ptr CChar)' peek*
-    , withStringArray* `[String]'
+    , alloca- `String' peekString*
     , alloca- `String' peekString*
     } -> `Int' #}
 
 -- | Get the detailed information about atomic symbol.
 mxSymbolGetAtomicSymbolInfo
     :: AtomicSymbolCreator
-    -> [String]                             -- ^ TODO document for this argument.
-                                            -- The keyword arguments for specifying variable
-                                            -- number of arguments.
     -> IO (Int, String, String, MXUInt,
            [String], [String], [String],
-           String)                          -- ^ Return the name and description of the symbol,
+           String, String)                  -- ^ Return the name and description of the symbol,
                                             -- the name, type and description of it's arguments,
-                                            -- as well as the return type of this symbol.
-mxSymbolGetAtomicSymbolInfo creator kargs = do
-    (res, name, desc, argc, argv, argtype, argdesc, rettype) <- mxSymbolGetAtomicSymbolInfoImpl creator kargs
+                                            -- the keyword argument for specifying variable number
+                                            -- of arguments, as well as the return type of this
+                                            -- symbol.
+mxSymbolGetAtomicSymbolInfo creator = do
+    -- Documentation for kargs: https://github.com/dmlc/mxnet/blob/master/include/mxnet/c_api.h#L555
+    (res, name, desc, argc, argv, argtype, argdesc, kargs, rettype) <- mxSymbolGetAtomicSymbolInfoImpl creator
     argv' <- peekStringArray argc argv
     argtype' <- peekStringArray argc argtype
     argdesc' <- peekStringArray argc argdesc
-    return (res, name, desc, argc, argv', argtype', argdesc', rettype)
+    return (res, name, desc, argc, argv', argtype', argdesc', kargs, rettype)
 
 -- | Create an AtomicSymbol.
 {#fun MXSymbolCreateAtomicSymbol as mxSymbolCreateAtomicSymbol
