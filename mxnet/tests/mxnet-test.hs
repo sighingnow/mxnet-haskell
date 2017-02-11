@@ -6,6 +6,7 @@
 --
 -- Test suite for mxnet package.
 --
+import           Control.Monad
 import           Test.Tasty
 import           Test.Tasty.QuickCheck
 import           Test.QuickCheck.Monadic
@@ -14,7 +15,10 @@ import           MXNet.Core.Base
 import           MXNet.Core.NDArray
 
 main :: IO ()
-main = defaultMain $ testGroup "MXNet Test Suite"
+main = defaultMain mxnetTest >> void mxNotifyShutdown
+
+mxnetTest :: TestTree
+mxnetTest = testGroup "MXNet Test Suite"
     [ ndarrayTest
     ]
 

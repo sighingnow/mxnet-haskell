@@ -38,7 +38,7 @@ before_install:
   - cd ~/mxnet && git checkout v0.9.3 && make && cd ~
   - mkdir -p ~/.local/lib
   - cp -f ~/mxnet/lib/libmxnet.so ~/.local/lib/
-  - export LIBRARY_PATH=~/.local/lib:$LD_LIBRARY_PATH
+  - export LIBRARY_PATH=~/.local/lib:$LIBRARY_PATH
   - export LD_LIBRARY_PATH=~/.local/lib:$LD_LIBRARY_PATH
   - export C_INCLUDE_PATH=~/mxnet/include:~/mxnet/nnvm/include:~/mxnet/dmlc-core/include:$C_INCLUDE_PATH
   # Set up haskell environment.
