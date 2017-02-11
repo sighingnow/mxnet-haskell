@@ -18,22 +18,35 @@ module C2HS.C.Extra.Marshal
 import Foreign.C.String ( peekCString, withCString )
 import Foreign.C.Types ( CChar, CInt, CUInt )
 import Foreign.Marshal.Array ( peekArray, withArray )
-import Foreign.Ptr ( Ptr )
+import Foreign.Ptr ( Ptr, nullPtr )
 import Foreign.Storable ( Storable, peek )
 
 -- | Peek from pointer then cast to another integral type.
 peekIntegral :: (Integral a, Storable a, Integral b) => Ptr a -> IO b
-peekIntegral = (fromIntegral <$>) . peek
+peekIntegral p = if p == nullPtr
+                    then return 0
+                    else fromIntegral <$> peek p
 
 {-# SPECIALIZE peekIntegral :: Ptr CInt -> IO Int #-}
 
 -- | Peek string from a two-dimension pointer of CChar.
 peekString :: Ptr (Ptr CChar) -> IO String
-peekString p = peek p >>= peekCString
+peekString p = if p == nullPtr
+                  then return ""
+                  else peek p >>= \p' ->
+                      if p' == nullPtr
+                         then return ""
+                         else peekCString p'
 
 -- | Peek an array of String and the result's length is given.
 peekStringArray :: Integral n => n -> Ptr (Ptr CChar) -> IO [String]
-peekStringArray n p = peekArray (fromIntegral n) p >>= mapM peekCString
+peekStringArray 0 _ = return []
+peekStringArray n p = if p == nullPtr
+                         then return []
+                         else peekArray (fromIntegral n) p >>=
+                             mapM (\p' -> if p' == nullPtr
+                                             then return ""
+                                             else peekCString p')
 
 {-# SPECIALIZE peekStringArray :: Int -> Ptr (Ptr CChar) -> IO [String] #-}
 {-# SPECIALIZE peekStringArray :: CUInt -> Ptr (Ptr CChar) -> IO [String] #-}
