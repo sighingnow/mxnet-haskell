@@ -6,12 +6,16 @@
 --
 -- Test suite for mxnet package.
 --
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
+
 import           Control.Monad
 import           Test.Tasty
 import           Test.Tasty.QuickCheck
 import           Test.QuickCheck.Monadic
 
 import           MXNet.Core.Base
+import           MXNet.Core.HMap
 import           MXNet.Core.NDArray
 
 main :: IO ()
@@ -19,7 +23,14 @@ main = defaultMain mxnetTest >> void mxNotifyShutdown
 
 mxnetTest :: TestTree
 mxnetTest = testGroup "MXNet Test Suite"
-    [ ndarrayTest
+    [ hmapTest
+    , ndarrayTest
+    ]
+
+hmapTest :: TestTree
+hmapTest = testGroup "HMap"
+    [ testProperty "Get after add" $
+        get @"a" (add @"a" (1 :: Int) empty) === 1
     ]
 
 ndarrayTest :: TestTree

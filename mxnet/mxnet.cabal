@@ -17,6 +17,7 @@ Library
         MXNet.Core.Base
         MXNet.Core.Base.Native.NDArray
         MXNet.Core.Base.Native.Symbol
+        MXNet.Core.HMap
         MXNet.Core.NDArray
         MXNet.Core.Symbol
         MXNet.Core.Predict.Base
