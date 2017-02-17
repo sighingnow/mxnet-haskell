@@ -7,6 +7,7 @@
 -- Test suite for mxnet package.
 --
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE TypeApplications #-}
 
 import           Control.Monad
@@ -39,12 +40,11 @@ ndarrayTest = testGroup "NDArray"
         let shape = [2, 3, 4, 5]
 
         shape' <- run $ do
-            array <- makeNDArray shape
+            array <- makeNDArray shape [1..(2*3*4*5)] :: IO (NDArray Float)
             (_, shape') <- getNDArrayShape array
             return shape'
 
-        stop $ shape === shape
+        stop $ shape === shape'
     ]
-
 
 

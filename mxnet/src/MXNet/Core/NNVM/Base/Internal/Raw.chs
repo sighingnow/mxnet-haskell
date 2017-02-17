@@ -12,6 +12,9 @@
 #elif __GLASGOW_HASKELL__ >= 701
 {-# LANGUAGE Trustworthy #-}
 #endif
+#if __GLASGOW_HASKELL__ >= 801
+{-# LANGUAGE Strict #-}
+#endif
 {-# LANGUAGE ForeignFunctionInterface #-}
 
 module MXNet.Core.NNVM.Base.Internal.Raw where

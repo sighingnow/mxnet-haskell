@@ -6,8 +6,9 @@
 --
 -- Example of how to work with NDArray.
 --
+{-# LANGUAGE OverloadedLists #-}
 
 import           MXNet.Core.NDArray
 
 main :: IO ()
-main = makeNDArray [2,3,4] >>= getNDArrayShape >>= print
+main = makeNDArray [2,3,4] [1..(2*3*4)] >>= getNDArrayShape >>= print

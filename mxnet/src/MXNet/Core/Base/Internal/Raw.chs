@@ -12,6 +12,9 @@
 #elif __GLASGOW_HASKELL__ >= 701
 {-# LANGUAGE Trustworthy #-}
 #endif
+#if __GLASGOW_HASKELL__ >= 801
+{-# LANGUAGE Strict #-}
+#endif
 {-# LANGUAGE ForeignFunctionInterface #-}
 
 module MXNet.Core.Base.Internal.Raw where
@@ -320,8 +323,44 @@ mxFuncGetInfo handle = do
     , withStringArray* `[String]'   -- ^ Values for keyword parameters.
     } -> `Int' #}
 
--- | Invoke a nnvm op and imperative function. FIXME
-mxImperativeInvoke = undefined
+{#fun MXImperativeInvoke as mxImperativeInvokeImpl
+    { id `AtomicSymbolCreator'      -- ^ Creator of the OP.
+    , `Int'
+    , withArray* `[NDArrayHandle]'
+    , id `Ptr CInt'
+    , id `Ptr (Ptr NDArrayHandle)'
+    , `Int'
+    , withStringArray* `[String]'
+    , withStringArray* `[String]'
+    } -> `Int' #}
+
+-- | Invoke a nnvm op and imperative function.
+mxImperativeInvoke :: AtomicSymbolCreator       -- ^ Creator/Handler of the OP.
+                   -> [NDArrayHandle]           -- ^ Input NDArrays.
+                   -> [(String, String)]        -- ^ Keywords parameters.
+                   -> Maybe [NDArrayHandle]     -- ^ Original given output handles array.
+                   -> IO (Int, [NDArrayHandle]) -- ^ Return NDArrays as result.
+mxImperativeInvoke creator inputs params outputs = do
+    let (keys, values) = unzip params
+        ninput = length inputs
+        nparam = length params
+    (res, n, p) <- case outputs of
+        Nothing -> alloca $ \pn ->
+            alloca $ \pp -> do
+                res' <- mxImperativeInvokeImpl creator ninput inputs pn pp nparam keys values
+                n' <- fromIntegral <$> peek pn
+                p' <- peek pp
+                return (res', n', p')
+        Just out -> alloca $ \pn ->
+            alloca $ \pp -> do
+                poke pn (fromIntegral $ length out)
+                withArray out $ \p' -> do
+                    poke pp p'
+                    res' <- mxImperativeInvokeImpl creator ninput inputs pn pp nparam keys values
+                    n' <- fromIntegral <$> peek pn
+                    return (res', n', p')
+    arrays <- if n == 0 then return [] else peekArray n p
+    return (res, arrays)
 
 -------------------------------------------------------------------------------
 
@@ -334,7 +373,7 @@ mxImperativeInvoke = undefined
 mxListAllOpNames :: IO (Int, MXUInt, [String])
 mxListAllOpNames = do
     (res, n, p) <- mxListAllOpNamesImpl
-    names <- peekStringArray (fromIntegral n) p
+    names <- peekStringArray (fromIntegral n :: Int) p
     return (res, n, names)
 
 {#fun MXSymbolListAtomicSymbolCreators as mxSymbolListAtomicSymbolCreatorsImpl
