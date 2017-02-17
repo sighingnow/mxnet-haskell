@@ -47,6 +47,7 @@ module MXNet.Core.HMap
       -- * Operations on HMap.
     , empty
     , add
+    , add'
     , (.+.)
     , get
     , (.->.)
@@ -109,6 +110,15 @@ add :: forall k v kvs. 'No ~ FindKV k v kvs => v -> HMap kvs -> HMap (k ':= v ':
 add v (HMap kvs) = HMap (Cons v kvs)
 
 {-# INLINE add #-}
+
+-- | Add a key-value pair into the HMap (via TypeApplications).
+--
+-- FIXME should have a @'No ~ FindKV k v kvs@ constraint here.
+add' :: forall k v kvs. Proxy k -> v -> HMap kvs -> HMap (k ':= v ': kvs)
+add' proxy v (HMap kvs) = HMap (Cons v kvs)
+
+{-# INLINE add' #-}
+
 
 -- | Infix version of @add@.
 (.+.) :: forall k v kvs. 'No ~ FindKV k v kvs => v -> HMap kvs -> HMap (k ':= v ': kvs)
