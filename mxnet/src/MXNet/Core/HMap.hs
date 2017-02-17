@@ -38,7 +38,13 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module MXNet.Core.HMap
-    ( HMap
+    ( -- * HMap type definition
+      HMap
+      -- * Type level constraints and operators
+    , KV (..)
+    , ShowKV (..)
+    , MatchKVList (..)
+      -- * Operations on HMap.
     , empty
     , add
     , (.+.)
@@ -46,6 +52,7 @@ module MXNet.Core.HMap
     , (.->.)
     , update
     , set
+    , mergeTo
     , dump
     ) where
 
@@ -55,6 +62,8 @@ import           Data.List (intercalate)
 import           Data.Monoid ((<>))
 
 data KV v = Symbol := v
+
+infixr 6 :=
 
 data KVList (kvs :: [KV *]) where
     Nil :: KVList '[]
@@ -72,26 +81,7 @@ type family FindKV (k :: Symbol) v (kvs :: [KV *]) :: IfHasKey where
 -- | HMap definition.
 newtype HMap (kvs :: [KV *]) = HMap { getKVList :: KVList kvs }
 
--- | If a KVList is a sublist of another KVList.
-data IfSubType = SubType | NotSubType
-
--- | Make a IfSubType from IfHasKey.
-type family MkIfSubType (r :: IfHasKey) :: IfSubType where
-    MkIfSubType ('Yes _) = 'SubType
-    MkIfSubType 'No = 'NotSubType
-
--- | Combine two IfSubType type.
-type family AllSubType (t1:: IfSubType) (t2 :: IfSubType) :: IfSubType where
-    AllSubType 'SubType 'SubType = 'SubType
-    AllSubType _ _ = 'NotSubType
-
--- | If the first KVList is part of the second KVList.
-type family MatchKVList (kvs1 :: [KV *]) (kvs2 :: [KV *]) :: IfSubType where
-    MatchKVList '[] _ = 'SubType
-    MatchKVList (k1 ':= v1 ': kvs') kvs2 = AllSubType (MkIfSubType (FindKV k1 v1 kvs2)) (MatchKVList kvs' kvs2)
-
 -- | Constraint ensure 'HMap' must contain k-v pair.
---
 class InDict (k :: Symbol) (v :: *) (kvs :: [KV *]) | k kvs -> v where
     get' :: HMap kvs -> v
     update' :: (v -> v) -> HMap kvs -> HMap kvs
@@ -124,6 +114,8 @@ add v (HMap kvs) = HMap (Cons v kvs)
 (.+.) :: forall k v kvs. 'No ~ FindKV k v kvs => v -> HMap kvs -> HMap (k ':= v ': kvs)
 (.+.) = add
 
+infix 8 .+.
+
 {-# INLINE (.+.) #-}
 
 -- | Get the value of an existing key.
@@ -135,6 +127,8 @@ get = get' @k
 -- | Infix version of @get@.
 (.->.) :: forall (k :: Symbol) v kvs. InDict k v kvs => HMap kvs -> v
 (.->.) = get @k
+
+infix 7 .->.
 
 {-# INLINE (.->.) #-}
 
@@ -150,6 +144,21 @@ set v = update' @k (const v)
 
 {-# INLINE set #-}
 
+-- | Merge the first KVList into the second one.
+class MatchKVList (kvs1 :: [KV *]) (kvs2 :: [KV *]) where
+    -- | Update all values in the first HMap into the second KVList.
+    mergeTo' :: HMap kvs1 -> HMap kvs2 -> HMap kvs2
+
+instance MatchKVList ('[]) (kvs2) where
+    mergeTo' _ m2 = m2
+
+instance (MatchKVList kvs1 kvs2, InDict k v kvs2) => MatchKVList (k ':= v ': kvs1) kvs2 where
+    mergeTo' (HMap (Cons v kvs)) m2 = mergeTo' (HMap kvs) (set @k v m2)
+
+-- | Update all values in the first HMap into the second KVList.
+mergeTo :: forall (kvs1 :: [KV *]) (kvs2 :: [KV *]). MatchKVList kvs1 kvs2 => HMap kvs1 -> HMap kvs2 -> HMap kvs2
+mergeTo = mergeTo'
+
 class ShowKV (kvs :: [KV *]) where
     show' :: forall k v. KVList kvs -> [(String, String)]
 
@@ -164,6 +173,7 @@ instance (KnownSymbol k, Show v, ShowKV kvs) => ShowKV (k ':= v ': kvs) where
 
 instance ShowKV kvs => Show (HMap kvs) where
     show m = "[" <> (intercalate ", " . map (\(k, v) -> k <> " = " <> v) . show' . getKVList $ m) <> "]"
+    {-# INLINE show #-}
 
 -- | Dump key-value pair in HMap as [(k, v)].
 dump :: forall kvs. ShowKV kvs => HMap kvs -> [(String, String)]
