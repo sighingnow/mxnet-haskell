@@ -28,7 +28,7 @@ registerNDArrayOps mutable = runIO $ do
 
   where
     getNames :: IO [String]
-    getNames = nnListAllOpNames >>= \(_, _, names) -> return names
+    getNames = mxListAllOpNames >>= \(_, _, names) -> return names
 
 -- | Prepend elements in the second map into the first one.
 updateMap :: [(String, String)] -> [(String, String)] -> [(String, String)]

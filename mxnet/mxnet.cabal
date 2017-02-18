@@ -21,13 +21,13 @@ Library
         MXNet.Core.Predict.Base
         MXNet.Core.NNVM.Base
     other-modules:
+        MXNet.Core.Base.Internal.TH.NDArray
+        MXNet.Core.Base.Internal.TH.Symbol
         MXNet.Core.Base.Internal.TH
         MXNet.Core.Internal.Types.Raw
         MXNet.Core.Base.Internal.Raw
         MXNet.Core.Predict.Internal.Raw
         MXNet.Core.NNVM.Base.Internal.Raw
-        MXNet.Core.Base.Internal.TH.NDArray
-        MXNet.Core.Base.Internal.TH.Symbol
     hs-source-dirs:         src
     build-tools:            c2hs
     ghc-options:            -Wall -lmxnet

@@ -7,6 +7,13 @@
 --
 -- Convenient marshallers for complicate C types.
 --
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 709
+{-# LANGUAGE Safe #-}
+#elif __GLASGOW_HASKELL__ >= 701
+{-# LANGUAGE Trustworthy #-}
+#endif
+
 module C2HS.C.Extra.Marshal
     ( peekIntegral
     , peekString

@@ -11,4 +11,6 @@
 import           MXNet.Core.NDArray
 
 main :: IO ()
-main = makeNDArray [2,3,4] [1..(2*3*4)] >>= getNDArrayShape >>= print
+main = do
+    arr <- array [2,3,4] [1..(2*3*4)] :: IO (NDArray Float)
+    shape arr >>= print

@@ -37,14 +37,18 @@ hmapTest = testGroup "HMap"
 ndarrayTest :: TestTree
 ndarrayTest = testGroup "NDArray"
     [ testProperty "NDArray shape should coincide" $ monadicIO $ do
-        let shape = [2, 3, 4, 5]
-
-        shape' <- run $ do
-            array <- makeNDArray shape [1..(2*3*4*5)] :: IO (NDArray Float)
-            (_, shape') <- getNDArrayShape array
-            return shape'
-
-        stop $ shape === shape'
+        let sh = [2, 3, 4, 5]
+        sh' <- run $ do
+            arr <- array sh [1..(2*3*4*5)] :: IO (NDArray Float)
+            (_, sh'') <- shape arr
+            return sh''
+        stop $ sh === sh'
+    , testProperty "NDArray reshape should keep size" $ monadicIO $ do
+        let sh = [2, 3, 4, 5]
+        s <- run $ do
+            arr <- array sh [1..(2*3*4*5)] :: IO (NDArray Float)
+            size arr
+        stop $ product sh === s
     ]
 
 

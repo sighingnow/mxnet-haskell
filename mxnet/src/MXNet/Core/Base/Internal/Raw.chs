@@ -353,8 +353,8 @@ mxImperativeInvoke creator inputs params outputs = do
                 return (res', n', p')
         Just out -> alloca $ \pn ->
             alloca $ \pp -> do
-                poke pn (fromIntegral $ length out)
                 withArray out $ \p' -> do
+                    poke pn (fromIntegral $ length out)
                     poke pp p'
                     res' <- mxImperativeInvokeImpl creator ninput inputs pn pp nparam keys values
                     n' <- fromIntegral <$> peek pn
