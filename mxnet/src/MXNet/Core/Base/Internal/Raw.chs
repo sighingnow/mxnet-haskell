@@ -347,6 +347,8 @@ mxImperativeInvoke creator inputs params outputs = do
     (res, n, p) <- case outputs of
         Nothing -> alloca $ \pn ->
             alloca $ \pp -> do
+                poke pn 0
+                poke pp nullPtr
                 res' <- mxImperativeInvokeImpl creator ninput inputs pn pp nparam keys values
                 n' <- fromIntegral <$> peek pn
                 p' <- peek pp
