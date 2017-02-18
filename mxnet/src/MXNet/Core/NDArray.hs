@@ -245,26 +245,23 @@ onehotEncode indices out = do
 -- | Create a new NDArray filled with 0, with specified shape and context.
 zeros :: DType a
       => [Int]      -- ^ Shape.
-      -> Context    -- ^ Context.
       -> IO (NDArray a)
-zeros sh ctx = full sh ctx 0
+zeros sh = full sh 0
 
 -- | Create a new NDArray filled with 1, with specified shape and context.
 ones :: DType a
      => [Int]      -- ^ Shape.
-     -> Context    -- ^ Context.
      -> IO (NDArray a)
-ones sh ctx = full sh ctx 1
+ones sh = full sh 1
 
 -- | Create a new NDArray filled with given value, with specified shape and context.
 full :: DType a
       => [Int]      -- ^ Shape.
-      -> Context    -- ^ Context.
       -> a          -- ^ Given value to fill the ndarray.
       -> IO (NDArray a)
-full sh ctx value = do
-    ds <- newArray (0, product sh) value
-    makeNDArray sh ctx ds
+full sh value = do
+    ds <- newArray (1, product sh) value
+    makeNDArray sh defaultContext ds
 
 -- | Create a new NDArray that copies content from source_array.
 array :: DType a
