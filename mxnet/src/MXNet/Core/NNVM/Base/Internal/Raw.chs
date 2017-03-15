@@ -163,11 +163,11 @@ nnGetOpInfo handle = do
     } -> `Int' #}
 
 -- | Get all attributes from symbol, including all descendents.
-nnSymbolListAttrs :: SymbolHandle -> Int -> IO (Int, NNUInt, [String])
+nnSymbolListAttrs :: SymbolHandle -> Int -> IO (Int, [String])
 nnSymbolListAttrs sym recursive = do
     (res, n, p) <- nnSymbolListAttrsImpl sym recursive
     ss <- peekStringArray n p
-    return (res, n, ss)
+    return (res, ss)
 
 {#fun NNSymbolListInputVariables as nnSymbolListInputVariablesImpl
     { id `SymbolHandle'
@@ -177,11 +177,11 @@ nnSymbolListAttrs sym recursive = do
     } -> `Int' #}
 
 -- | List inputs variables in the symbol.
-nnSymbolListInputVariables :: SymbolHandle -> Int -> IO (Int, NNUInt, [SymbolHandle])
+nnSymbolListInputVariables :: SymbolHandle -> Int -> IO (Int, [SymbolHandle])
 nnSymbolListInputVariables sym opt = do
     (res, n, p) <- nnSymbolListInputVariablesImpl sym opt
     vs <- peekArray (fromIntegral n) p
-    return (res, n, vs)
+    return (res, vs)
 
 {#fun NNSymbolListInputNames as nnSymbolListInputNamesImpl
     { id `SymbolHandle'
@@ -191,11 +191,11 @@ nnSymbolListInputVariables sym opt = do
     } -> `Int' #}
 
 -- | List input names in the symbol.
-nnSymbolListInputNames :: SymbolHandle -> Int -> IO (Int, NNUInt, [String])
+nnSymbolListInputNames :: SymbolHandle -> Int -> IO (Int, [String])
 nnSymbolListInputNames sym opt = do
     (res, n, p) <- nnSymbolListInputNamesImpl sym opt
     ss <- peekStringArray n p
-    return (res, n, ss)
+    return (res, ss)
 
 {#fun NNSymbolListOutputNames as nnSymbolListOutputNamesImpl
     { id `SymbolHandle'
@@ -204,11 +204,11 @@ nnSymbolListInputNames sym opt = do
     } -> `Int' #}
 
 -- | List returns names in the symbol.
-nnSymbolListOutputNames :: SymbolHandle -> IO (Int, NNUInt, [String])
+nnSymbolListOutputNames :: SymbolHandle -> IO (Int, [String])
 nnSymbolListOutputNames sym = do
     (res, n, p) <- nnSymbolListOutputNamesImpl sym
     ss <- peekStringArray n p
-    return (res, n, ss)
+    return (res, ss)
 
 -- | Get a symbol that contains all the internals.
 {#fun NNSymbolGetInternals as nnSymbolGetInternals

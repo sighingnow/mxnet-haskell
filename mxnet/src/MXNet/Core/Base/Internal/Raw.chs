@@ -249,11 +249,11 @@ mxNDArrayGetShape handle = do
     } -> `Int' #}
 
 -- | List all the available functions handles.
-mxListFunctions :: IO (Int, MXUInt, [FunctionHandle]) -- ^ The output function handle array.
+mxListFunctions :: IO (Int, [FunctionHandle]) -- ^ The output function handle array.
 mxListFunctions = do
     (res, c, p) <- mxListFunctionsImpl
     fs <- peekArray (fromIntegral c) p
-    return (res, c, fs)
+    return (res, fs)
 
 -- | Get the function handle by name.
 {#fun MXGetFunction as mxGetFunction
@@ -372,11 +372,11 @@ mxImperativeInvoke creator inputs params outputs = do
     } -> `Int' #}
 
 -- | List all the available operator names, include entries.
-mxListAllOpNames :: IO (Int, MXUInt, [String])
+mxListAllOpNames :: IO (Int, [String])
 mxListAllOpNames = do
     (res, n, p) <- mxListAllOpNamesImpl
     names <- peekStringArray (fromIntegral n :: Int) p
-    return (res, n, names)
+    return (res, names)
 
 {#fun MXSymbolListAtomicSymbolCreators as mxSymbolListAtomicSymbolCreatorsImpl
     { alloca- `MXUInt' peek*
@@ -385,12 +385,11 @@ mxListAllOpNames = do
 
 -- | List all the available @AtomicSymbolCreator@.
 mxSymbolListAtomicSymbolCreators
-    :: IO (Int, MXUInt, [AtomicSymbolCreator])  -- ^ The number of atomic symbol creators and
-                                                -- the atomic symbol creators list.
+    :: IO (Int, [AtomicSymbolCreator])  -- ^ The atomic symbol creators list.
 mxSymbolListAtomicSymbolCreators = do
     (res, n, p) <- mxSymbolListAtomicSymbolCreatorsImpl
     ss <- peekArray (fromIntegral n) p
-    return (res, n, ss)
+    return (res, ss)
 
 -- | Get the name of an atomic symbol.
 {#fun MXSymbolGetAtomicSymbolName as mxSymbolGetAtomicSymbolName
@@ -529,12 +528,11 @@ mxSymbolGetAtomicSymbolInfo creator = do
 
 -- | Get all attributes from symbol, including all descendents.
 mxSymbolListAttr :: SymbolHandle
-                 -> IO (Int, MXUInt, [String])  -- ^ The number of attributes and
-                                                -- attributes list.
+                 -> IO (Int, [String])  -- ^ The attributes list.
 mxSymbolListAttr symbol = do
     (res, n, p) <- mxSymbolListAttrImpl symbol
     ss <- peekStringArray n p
-    return (res, n, ss)
+    return (res, ss)
 
 {#fun MXSymbolListAttrShallow as mxSymbolListAttrShallowImpl
     { id `SymbolHandle'
@@ -544,12 +542,11 @@ mxSymbolListAttr symbol = do
 
 -- | Get all attributes from symbol, excluding descendents.
 mxSymbolListAttrShallow :: SymbolHandle
-                        -> IO (Int, MXUInt, [String])   -- ^ The number of attributes and
-                                                        -- attributes list.
+                        -> IO (Int, [String])   -- ^ The attributes list.
 mxSymbolListAttrShallow symbol = do
     (res, n, p) <- mxSymbolListAttrShallowImpl symbol
     ss <- peekStringArray n p
-    return (res, n, ss)
+    return (res, ss)
 
 {#fun MXSymbolListArguments as mxSymbolListArgumentsImpl
     { id `SymbolHandle'
@@ -559,12 +556,11 @@ mxSymbolListAttrShallow symbol = do
 
 -- | List arguments in the symbol.
 mxSymbolListArguments :: SymbolHandle
-                      -> IO (Int, MXUInt, [String]) -- ^ The number of arguments and list of
-                                                    -- arguments' names.
+                      -> IO (Int, [String]) -- ^ List of arguments' names.
 mxSymbolListArguments symbol = do
     (res, n, p) <- mxSymbolListArgumentsImpl symbol
     ss <- peekStringArray n p
-    return (res, n, ss)
+    return (res, ss)
 
 {#fun MXSymbolListOutputs as mxSymbolListOutputsImpl
     { id `SymbolHandle'
@@ -574,12 +570,11 @@ mxSymbolListArguments symbol = do
 
 -- | List returns in the symbol.
 mxSymbolListOutputs :: SymbolHandle
-                    -> IO (Int, MXUInt, [String])   -- ^ The number of outputs and list of
-                                                    -- outputs' names.
+                    -> IO (Int, [String])   -- ^ The outputs' names.
 mxSymbolListOutputs symbol = do
     (res, n, p) <- mxSymbolListOutputsImpl symbol
     ss <- peekStringArray n p
-    return (res, n, ss)
+    return (res, ss)
 
 -- | Get a symbol that contains all the internals.
 {#fun MXSymbolGetInternals as mxSymbolGetInternals
@@ -605,11 +600,11 @@ mxSymbolListOutputs symbol = do
 -- | List auxiliary states in the symbol.
 mxSymbolListAuxiliaryStates
     :: SymbolHandle
-    -> IO (Int, MXUInt, [String])   -- ^ The output size and the output string array.
+    -> IO (Int, [String])   -- ^ The output string array.
 mxSymbolListAuxiliaryStates symbol = do
     (res, n, p) <- mxSymbolListAuxiliaryStatesImpl symbol
     ss <- peekStringArray n p
-    return (res, n, ss)
+    return (res, ss)
 
 -- | Compose the symbol on other symbols.
 {#fun MXSymbolCompose as mxSymbolCompose
