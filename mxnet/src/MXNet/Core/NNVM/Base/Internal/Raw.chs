@@ -33,10 +33,12 @@ import C2HS.C.Extra.Marshal
 
 #include <nnvm/c_api.h>
 
+-- | Set the last error message needed by C API.
 {#fun NNAPISetLastError as nnAPISetLastError
     { `String'
     } -> `()' #}
 
+-- | Return str message of the last error.
 {#fun NNGetLastError as nnGetLastError
     {
     } -> `String' #}
@@ -46,14 +48,16 @@ import C2HS.C.Extra.Marshal
     , alloca- `Ptr (Ptr CChar)' peek*
     } -> `Int' #}
 
-nnListAllOpNames :: IO (Int, NNUInt, [String])
+-- | List all the available operator names, include entries.
+nnListAllOpNames :: IO (Int, [String])
 nnListAllOpNames = do
     (res, n, p) <- nnListAllOpNamesImpl
     ss <- peekStringArray n p
-    return (res, n, ss)
+    return (res, ss)
 
+-- | Get operator handle given name.
 {#fun NNGetOpHandle as nnGetOpHandle
-    { `String'
+    { `String'                  -- ^ The name of the operator.
     , alloca- `OpHandle' peek*
     } -> `Int' #}
 
@@ -62,11 +66,12 @@ nnListAllOpNames = do
     , alloca- `Ptr OpHandle' peek*
     } -> `Int' #}
 
-nnListUniqueOps :: IO (Int, NNUInt, [OpHandle])
+-- | List all the available operators.
+nnListUniqueOps :: IO (Int, [OpHandle])
 nnListUniqueOps = do
     (res, n, p) <- nnListUniqueOpsImpl
     ops <- peekArray (fromIntegral n) p
-    return (res, n, ops)
+    return (res, ops)
 
 {#fun NNGetOpInfo as nnGetOpInfoImpl
     { id `OpHandle'
@@ -79,6 +84,7 @@ nnListUniqueOps = do
     , alloca- `String' peekString*
     } -> `Int' #}
 
+-- | Get the detailed information about atomic symbol.
 nnGetOpInfo :: OpHandle
             -> IO (Int, String, String, NNUInt, [String], [String], [String], String)
 nnGetOpInfo handle = do
@@ -88,44 +94,52 @@ nnGetOpInfo handle = do
     argdesc <- peekStringArray argc pargdesc
     return (res, name, desc, argc, argv, argt, argdesc, rettype)
 
+-- | Create an AtomicSymbol functor.
 {#fun NNSymbolCreateAtomicSymbol as nnSymbolCreateAtomicSymbol
-    { id `OpHandle'
-    , id `NNUInt'
-    , withStringArray* `[String]'
-    , withStringArray* `[String]'
+    { id `OpHandle'                 -- ^ The operator handle.
+    , id `NNUInt'                   -- ^ The number of parameters.
+    , withStringArray* `[String]'   -- ^ The keys to the params.
+    , withStringArray* `[String]'   -- ^ The values to the params.
     , alloca- `SymbolHandle' peek*
     } -> `Int' #}
 
+-- | Create a Variable Symbol.
 {#fun NNSymbolCreateVariable as nnSymbolCreateVariable
-    { `String'
+    { `String'                      -- ^ The name of the variable.
     , alloca- `SymbolHandle' peek*
     } -> `Int' #}
 
+-- | Create a Symbol by grouping list of symbols together.
 {#fun NNSymbolCreateGroup as nnSymbolCreateGroup
-    { id `NNUInt'
-    , withArray* `[SymbolHandle]'
+    { id `NNUInt'                   -- ^ Number of symbols to be grouped.
+    , withArray* `[SymbolHandle]'   -- ^ Array of symbol handles.
     , alloca- `SymbolHandle' peek*
     } -> `Int' #}
 
+-- | Add src_dep to the handle as control dep.
 {#fun NNAddControlDeps as nnAddControlDeps
     { id `SymbolHandle' -- ^ The symbol to add dependency edges on.
     , id `SymbolHandle' -- ^ The source handles.
     } -> `Int' #}
 
+-- | Free the symbol handle.
 {#fun NNSymbolFree as nnSymbolFree
     { id `SymbolHandle'
     } -> `Int' #}
 
+-- | Copy the symbol to another handle.
 {#fun NNSymbolCopy as nnSymbolCopy
     { id `SymbolHandle'
     , alloca- `SymbolHandle' peek*
     } -> `Int' #}
 
+-- | Print the content of symbol, used for debug.
 {#fun NNSymbolPrint as nnSymbolPrint
     { id `SymbolHandle'
     , alloca- `String' peekString*
     } -> `Int' #}
 
+-- | Get string attribute from symbol.
 {#fun NNSymbolGetAttr as nnSymbolGetAttr
     { id `SymbolHandle'             -- ^ symbol handle
     , `String'                      -- ^ key
@@ -133,6 +147,7 @@ nnGetOpInfo handle = do
     , alloca- `Int' peekIntegral*   -- ^ if success, 0 when success, -1 when failure happens.
     } -> `Int' #}
 
+-- | Set string attribute from symbol.
 {#fun NNSymbolSetAttrs as nnSymbolSetAttrs
     { id `SymbolHandle'
     , id `NNUInt'
@@ -147,6 +162,7 @@ nnGetOpInfo handle = do
     , alloca- `Ptr (Ptr CChar)' peek* -- ^ out attributes
     } -> `Int' #}
 
+-- | Get all attributes from symbol, including all descendents.
 nnSymbolListAttrs :: SymbolHandle -> Int -> IO (Int, NNUInt, [String])
 nnSymbolListAttrs sym recursive = do
     (res, n, p) <- nnSymbolListAttrsImpl sym recursive
@@ -160,6 +176,7 @@ nnSymbolListAttrs sym recursive = do
     , alloca- `Ptr SymbolHandle' peek*
     } -> `Int' #}
 
+-- | List inputs variables in the symbol.
 nnSymbolListInputVariables :: SymbolHandle -> Int -> IO (Int, NNUInt, [SymbolHandle])
 nnSymbolListInputVariables sym opt = do
     (res, n, p) <- nnSymbolListInputVariablesImpl sym opt
@@ -173,6 +190,7 @@ nnSymbolListInputVariables sym opt = do
     , alloca- `Ptr (Ptr CChar)' peek*
     } -> `Int' #}
 
+-- | List input names in the symbol.
 nnSymbolListInputNames :: SymbolHandle -> Int -> IO (Int, NNUInt, [String])
 nnSymbolListInputNames sym opt = do
     (res, n, p) <- nnSymbolListInputNamesImpl sym opt
@@ -185,51 +203,60 @@ nnSymbolListInputNames sym opt = do
     , alloca- `Ptr (Ptr CChar)' peek*
     } -> `Int' #}
 
+-- | List returns names in the symbol.
 nnSymbolListOutputNames :: SymbolHandle -> IO (Int, NNUInt, [String])
 nnSymbolListOutputNames sym = do
     (res, n, p) <- nnSymbolListOutputNamesImpl sym
     ss <- peekStringArray n p
     return (res, n, ss)
 
+-- | Get a symbol that contains all the internals.
 {#fun NNSymbolGetInternals as nnSymbolGetInternals
     { id `SymbolHandle'
     , alloca- `SymbolHandle' peek*
     } -> `Int' #}
 
+-- | Get index-th outputs of the symbol.
 {#fun NNSymbolGetOutput as nnSymbolGetOutput
     { id `SymbolHandle'
     , id `NNUInt'
     , alloca- `SymbolHandle' peek*
     } -> `Int' #}
 
+-- | Compose the symbol on other symbols.
 {#fun NNSymbolCompose as nnSymbolCompose
     { id `SymbolHandle'
     , `String'
     , id `NNUInt'
     , withStringArray* `[String]'
-    , alloca- `SymbolHandle' peek*
+    , withArray* `[SymbolHandle]'
     } -> `Int' #}
 
+-- | Create a graph handle from symbol.
 {#fun NNGraphCreate as nnGraphCreate
     { id `SymbolHandle'
     , alloca- `GraphHandle' peek*
     } -> `Int' #}
 
+-- | Free the graph handle.
 {#fun NNGraphFree as nnGraphFree
     { id `GraphHandle'
     } -> `Int' #}
 
+-- | Get a new symbol from the graph.
 {#fun NNGraphGetSymbol as nnGraphGetSymbol
     { id `GraphHandle'             -- ^ the graph handle.
     , alloca- `SymbolHandle' peek* -- ^ the corresponding symbol.
     } -> `Int' #}
 
+-- | Get Set a attribute in json format.
 {#fun NNGraphSetJSONAttr as nnGraphSetJSONAttr
     { id `GraphHandle'
     , `String'
     , `String'
     } -> `Int' #}
 
+-- | Get a serialized attrirbute from graph.
 {#fun NNGraphGetJSONAttr as nnGraphGetJSONAttr
     { id `SymbolHandle'
     , `String'
@@ -237,12 +264,14 @@ nnSymbolListOutputNames sym = do
     , alloca- `Int' peekIntegral* -- ^ if success.
     } -> `Int' #}
 
+-- | Set a attribute whose type is std::vector<NodeEntry> in c++.
 {#fun NNGraphSetNodeEntryListAttr_ as nnGraphSetNodeEntryListAttr_
     { id `GraphHandle'
     , `String'
     , `SymbolHandle'
     } -> `Int' #}
 
+-- | Apply passes on the src graph.
 {#fun NNGraphApplyPasses as nnGraphApplyPasses
     { id `GraphHandle'
     , id `NNUInt'
