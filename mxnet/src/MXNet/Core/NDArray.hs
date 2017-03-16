@@ -10,6 +10,7 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
+{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedLists #-}
@@ -21,13 +22,15 @@
 module MXNet.Core.NDArray where
 
 import           Control.Monad
-import           Data.Array.Storable
 import           Data.Int
+import           Data.Vector.Storable (Vector)
+import qualified Data.Vector.Storable as V
 import           Foreign.Marshal.Alloc (alloca)
 import           Foreign.Marshal.Array (peekArray)
 import           Foreign.Ptr
 import           Foreign.Storable (Storable)
 import           GHC.Exts (IsList(..))
+import           Text.PrettyPrint.Annotated.HughesPJClass (Pretty(..), prettyShow)
 import           System.IO.Unsafe (unsafePerformIO)
 
 import           MXNet.Core.Base
@@ -71,9 +74,23 @@ instance DType Int32 where
     {-# INLINE typeid #-}
     {-# INLINE typename #-}
 
-instance DType a => Show (NDArray a) where
+-- | Wrapper for pretty print multiple dimensions matrices.
+data PrettyWrapper = forall a. Pretty a => MkPretty { runPretty :: a }
+
+instance Pretty PrettyWrapper where
+    pPrint (MkPretty inner) = pPrint inner
+
+instance (DType a, Pretty a) => Show (NDArray a) where
     -- TODO display more related information.
-    show array = unsafePerformIO $ show <$> items array
+    show array = unsafePerformIO $ do
+        (_, dims) <- shape array
+        print dims
+        values <- items array
+        return . prettyShow . splitItems values dims $ 0
+      where
+        splitItems :: Vector a -> [Int] -> Int -> PrettyWrapper
+        splitItems values [x] s = MkPretty . toList $ V.unsafeSlice s x values
+        splitItems values (d:ds) s = MkPretty $ (\x -> splitItems values ds (s + (product ds) * x)) <$> ([0 .. (d - 1)] :: [Int])
 
 instance DType a => Num (NDArray a) where
     (+) arr1 arr2 = NDArray $ unsafePerformIO $ do
@@ -96,17 +113,6 @@ instance DType a => Num (NDArray a) where
         I.negative handle1
     signum = error "Unsupported operation: signum(NDArray)"
     fromInteger = error "Unsupported operation: fromInteger(NDArray)"
-
--- | Vector type based on unboxed array.
-type Vec a = StorableArray Int a
-
-instance DType a => IsList (Vec a) where
-    type (Item (Vec a)) = a
-    fromList xs = unsafePerformIO (newListArray (0, length xs - 1) xs :: IO (Vec a))
-    toList arr = unsafePerformIO (getElems arr :: IO [a])
-
-instance DType a => Show (Vec a) where
-    show = show . toList
 
 -- | Context definition.
 --
@@ -154,15 +160,15 @@ makeEmptyNDArray sh ctx delayed = do
 makeNDArray :: DType a
             => [Int]            -- ^ size of every dimensions.
             -> Context
-            -> Vec a
+            -> Vector a
             -> IO (NDArray a)
 makeNDArray sh ctx ds = do
     let sh' = fromIntegral <$> sh
         nlen = fromIntegral . length $ sh
     (_, handle) <- mxNDArrayCreate sh' nlen (deviceType ctx) (deviceId ctx) 0
-    withStorableArray ds $ \p -> do
-        (l, r) <- getBounds ds
-        mxNDArraySyncCopyFromCPU handle (castPtr p) (fromIntegral (r-l+1))
+    V.unsafeWith ds $ \p -> do
+        let len = fromIntegral (V.length ds)
+        mxNDArraySyncCopyFromCPU handle (castPtr p) len
     return $ NDArray handle
 
 -- | Get the shape of given NDArray.
@@ -190,7 +196,7 @@ copy :: DType a => NDArray a -> IO (NDArray a)
 copy arr = NDArray <$> I._copy (getHandle arr)
 
 -- | Get data stored in NDArray.
-items :: DType a => NDArray a -> IO (Vec a)
+items :: DType a => NDArray a -> IO (Vector a)
 items arr = do
     nlen <- (product . snd) <$> shape arr
     alloca $ \p -> do
@@ -259,14 +265,12 @@ full :: DType a
       => [Int]      -- ^ Shape.
       -> a          -- ^ Given value to fill the ndarray.
       -> IO (NDArray a)
-full sh value = do
-    ds <- newArray (1, product sh) value
-    makeNDArray sh defaultContext ds
+full sh value = makeNDArray sh defaultContext $ V.replicate (product sh) value
 
 -- | Create a new NDArray that copies content from source_array.
 array :: DType a
       => [Int]      -- ^ Shape.
-      -> Vec a
+      -> Vector a
       -> IO (NDArray a)
 array sh = makeNDArray sh defaultContext
 
