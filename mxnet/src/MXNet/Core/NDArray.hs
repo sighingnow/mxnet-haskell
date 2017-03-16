@@ -10,6 +10,7 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
+
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -89,6 +90,7 @@ instance (DType a, Pretty a) => Show (NDArray a) where
         return . prettyShow . splitItems values dims $ 0
       where
         splitItems :: Vector a -> [Int] -> Int -> PrettyWrapper
+        splitItems _ [] _ = error "Impossible: never match an empty list."
         splitItems values [x] s = MkPretty . toList $ V.unsafeSlice s x values
         splitItems values (d:ds) s = MkPretty $ (\x -> splitItems values ds (s + (product ds) * x)) <$> ([0 .. (d - 1)] :: [Int])
 

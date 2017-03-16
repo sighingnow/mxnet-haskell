@@ -115,7 +115,7 @@ add v (HMap kvs) = HMap (Cons v kvs)
 --
 -- FIXME should have a @'No ~ FindKV k v kvs@ constraint here.
 add' :: forall k v kvs. Proxy k -> v -> HMap kvs -> HMap (k ':= v ': kvs)
-add' proxy v (HMap kvs) = HMap (Cons v kvs)
+add' _ v (HMap kvs) = HMap (Cons v kvs)
 
 {-# INLINE add' #-}
 

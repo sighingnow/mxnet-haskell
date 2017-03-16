@@ -22,6 +22,7 @@
 
 module MXNet.Core.Base.Internal.TH.NDArray where
 
+import Data.HashMap.Strict (union, fromList, toList)
 import Data.Proxy
 
 import MXNet.Core.HMap
@@ -29,8 +30,8 @@ import MXNet.Core.Internal.Types.Raw
 import MXNet.Core.Base.Internal.Raw (mxImperativeInvoke)
 import MXNet.Core.NNVM.Base.Internal.Raw (nnGetOpHandle)
 import MXNet.Core.Base.Internal.TH (registerNDArrayOps)
-import Prelude hiding (sin, sinh, cos, cosh, tan, tanh,
-                       abs, sum, sqrt, log, exp, round, floor, min, max, flip)
+import Prelude hiding (sin, sinh, cos, cosh, tan, tanh, min, max, round, floor,
+                       abs, sum, sqrt, log, exp, flip, concat)
 
 -- | Result representation for generic NDArray op.
 class NDArrayOpResult a where
@@ -56,8 +57,12 @@ instance NDArrayOpResult [NDArrayHandle] where
     fromResult = id
     {-# INLINE fromResult #-}
 
--- | Immutable version API.
+-- | Merge two argument dictionaries, if the key exists in both two dictionaries, use the first one.
+mergeArg :: [(String, String)] -> [(String, String)] -> [(String, String)]
+mergeArg as bs = toList $ fromList as `union` fromList bs
+
+-- | Register immutable version of ndarray operators.
 $(registerNDArrayOps False)
 
--- | Mutable version API.
+-- | Register mutable version of ndarray operators.
 $(registerNDArrayOps True)

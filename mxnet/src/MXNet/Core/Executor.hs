@@ -7,14 +7,13 @@
 --
 -- Symbol module.
 --
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
+
 module MXNet.Core.Executor where
 
-import           Control.Exception
 import           Control.Monad
 import           MXNet.Core.Base
 import           MXNet.Core.NDArray (NDArray(NDArray), DType)
-import           MXNet.Core.NNVM.Base
-import           MXNet.Core.NNVM.Base.Internal.Raw
 
 -- | Type alias for variable.
 newtype Executor a = Executor { getHandle :: ExecutorHandle }

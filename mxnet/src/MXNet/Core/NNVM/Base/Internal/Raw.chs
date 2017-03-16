@@ -19,11 +19,10 @@
 
 module MXNet.Core.NNVM.Base.Internal.Raw where
 
-import Foreign.C.String
+import Control.Exception (throwIO)
 import Foreign.C.Types
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array
-import Foreign.Marshal.Utils ( with )
 import Foreign.Ptr
 import Foreign.Storable
 
@@ -224,13 +223,27 @@ nnSymbolListOutputNames sym = do
     } -> `Int' #}
 
 -- | Compose the symbol on other symbols.
-{#fun NNSymbolCompose as nnSymbolCompose
+{#fun NNSymbolCompose as nnSymbolComposeImpl
     { id `SymbolHandle'
     , `String'
     , id `NNUInt'
     , withStringArray* `[String]'
     , withArray* `[SymbolHandle]'
     } -> `Int' #}
+
+
+-- | Invoke a nnvm op and imperative function.
+nnSymbolCompose :: SymbolHandle       -- ^ Creator/Handler of the OP.
+                -> String
+                -> [String]
+                -> [SymbolHandle]
+                -> IO Int
+nnSymbolCompose sym name keys args = do
+    if null args || length keys == length args
+        then return ()
+        else throwIO $ userError "nnSymbolCompose: keyword arguments mismatch."
+    let nargs = fromIntegral $ length args
+    nnSymbolComposeImpl sym name nargs keys args
 
 -- | Create a graph handle from symbol.
 {#fun NNGraphCreate as nnGraphCreate

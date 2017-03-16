@@ -25,11 +25,9 @@ import           Unsafe.Coerce (unsafeCoerce)
 
 import           MXNet.Core.Base
 import           MXNet.Core.Executor hiding (getHandle)
-import qualified MXNet.Core.Executor as Executor (getHandle)
 import           MXNet.Core.NDArray hiding (getHandle)
 import qualified MXNet.Core.NDArray as NDArray (getHandle)
 import           MXNet.Core.NNVM.Base
-import           MXNet.Core.NNVM.Base.Internal.Raw
 
 -- | Type alias for variable.
 newtype Symbol a = Symbol { getHandle :: SymbolHandle }
@@ -80,42 +78,6 @@ getOutputs sym = snd <$> mxSymbolListOutputs (getHandle sym)
 -- | List all auxiliary states.
 getAuxiliary :: DType a => Symbol a -> IO [String]
 getAuxiliary sym = snd <$> mxSymbolListAuxiliaryStates (getHandle sym)
-
--- | Compose multiple symbols.
---
--- This function will change the sym hanlde. To achieve function apply behavior,
--- copy the symbol first before apply.
-compose :: DType a => Symbol a -> String -> [Symbol a] -> HashMap String (Symbol a) -> IO ()
-compose var name args kwargs = do
-    when ((not . null) args && (not . HM.null) kwargs) $
-        throwIO $ userError "compose only accept input Symbols either as positional or keyword arguments, not both"
-    let (arg_names, arg_values) = if null args
-                                     then (HM.keys kwargs, HM.elems kwargs)
-                                     else ([], args)
-        nargs = if null args
-                   then fromIntegral (length kwargs)
-                   else fromIntegral (length args)
-    void $ nnSymbolCompose (getHandle var) name nargs arg_names (getHandle <$> arg_values)
-
-createAtomic :: DType a => String -> OpHandle -> [Symbol a] -> [String] -> [String] -> IO (Symbol a)
-createAtomic name op args keys values = do
-    let nargs = fromIntegral (length keys)
-    (_, h) <- mxSymbolCreateAtomicSymbol op nargs keys values
-    let sym = Symbol h
-    compose sym name args [] >> return sym
-
-addition :: IO OpHandle
-addition = do
-    (_, handle) <- nnGetOpHandle "elemwise_add"
-    return handle
-
-plusvar :: DType a => Symbol a -> Symbol a -> IO (Symbol a)
-plusvar a b = do
-    handle <- addition
-    var <- createAtomic "sum" handle [a, b] [] []
-    nnSymbolListOutputNames (getHandle var) >>= print
-    nnSymbolListInputNames (getHandle var) 0 >>= print
-    return var
 
 -- | Get the autodiff of current symbol.
 -- This function can only be used if current symbol is a loss function.
