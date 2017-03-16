@@ -24,6 +24,7 @@ module MXNet.Core.NDArray where
 
 import           Control.Monad
 import           Data.Int
+import           Data.Monoid
 import           Data.Vector.Storable (Vector)
 import qualified Data.Vector.Storable as V
 import           Foreign.Marshal.Alloc (alloca)
@@ -36,6 +37,7 @@ import           System.IO.Unsafe (unsafePerformIO)
 
 import           MXNet.Core.Base
 import qualified MXNet.Core.Base.Internal.TH.NDArray as I
+import           MXNet.Core.HMap
 
 -- | NDArray type alias.
 newtype NDArray a = NDArray { getHandle :: NDArrayHandle }
@@ -85,9 +87,10 @@ instance (DType a, Pretty a) => Show (NDArray a) where
     -- TODO display more related information.
     show array = unsafePerformIO $ do
         (_, dims) <- shape array
-        print dims
         values <- items array
-        return . prettyShow . splitItems values dims $ 0
+        let info = show dims
+            body = prettyShow . splitItems values dims $ 0
+        return ("NDArray " <> info <> "\n" <> body)
       where
         splitItems :: Vector a -> [Int] -> Int -> PrettyWrapper
         splitItems _ [] _ = error "Impossible: never match an empty list."
@@ -211,7 +214,7 @@ slice :: DType a
       -> Int        -- ^ The beginning index of slice.
       -> Int        -- ^ The end index of slices.
       -> NDArray a
-slice arr start end = NDArray $ unsafePerformIO $ do
+slice arr start end = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
     (_, handle') <- mxNDArraySlice handle (fromIntegral start) (fromIntegral end)
     return handle'
@@ -221,7 +224,7 @@ at :: DType a
    => NDArray a
    -> Int       -- ^ The index.
    -> NDArray a
-at arr idx = NDArray $ unsafePerformIO $ do
+at arr idx = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
     (_, handle') <- mxNDArrayAt handle (fromIntegral idx)
     return handle'
@@ -231,7 +234,7 @@ reshape :: DType a
         => NDArray a
         -> [Int]        -- ^ Size of every dimension of new shape.
         -> NDArray a
-reshape arr sh = NDArray $ unsafePerformIO $ do
+reshape arr sh = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
     (_, handle') <- mxNDArrayReshape handle (length sh) sh
     return handle'
@@ -279,7 +282,7 @@ array sh = makeNDArray sh defaultContext
 -- | Add a scalar to a narray.
 (.+) :: DType a
       => NDArray a -> a -> NDArray a
-(.+) arr value = NDArray $ unsafePerformIO $ do
+(.+) arr value = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
     I._plus_scalar handle (realToFrac value)
 
@@ -297,7 +300,7 @@ infixl 6 .+
 -- | Subtract a scalar from a narray.
 (.-) :: DType a
       => NDArray a -> a -> NDArray a
-(.-) arr value = NDArray $ unsafePerformIO $ do
+(.-) arr value = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
     I._minus_scalar handle (realToFrac value)
 
@@ -315,7 +318,7 @@ infixl 6 .-
 -- | Multiply a scalar to a narray.
 (.*) :: DType a
       => NDArray a -> a -> NDArray a
-(.*) arr value = NDArray $ unsafePerformIO $ do
+(.*) arr value = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
     I._mul_scalar handle (realToFrac value)
 
@@ -333,7 +336,7 @@ infixl 7 .*
 -- | Divide a scalar from a narray.
 (./) :: DType a
       => NDArray a -> a -> NDArray a
-(./) arr value = NDArray $ unsafePerformIO $ do
+(./) arr value = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
     I._div_scalar handle (realToFrac value)
 
@@ -351,7 +354,7 @@ infixl 7 ./
 -- | Power of a ndarray, use a scalar as exponent.
 (.^) :: DType a
       => NDArray a -> a -> NDArray a
-(.^) arr value = NDArray $ unsafePerformIO $ do
+(.^) arr value = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
     I._power_scalar handle (realToFrac value)
 
@@ -369,7 +372,7 @@ infixl 8 .^
 -- | Power of a narray, use a ndarray as exponent.
 (..^) :: DType a
       => a -> NDArray a -> NDArray a
-(..^) value arr = NDArray $ unsafePerformIO $ do
+(..^) value arr = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
     I._rpower_scalar handle (realToFrac value)
 
@@ -387,7 +390,7 @@ infixl 8 ..^
 -- | Maximum elements in the given two ndarrays.
 maximum :: DType a
         => NDArray a -> NDArray a -> NDArray a
-maximum arr1 arr2 = NDArray $ unsafePerformIO $ do
+maximum arr1 arr2 = NDArray . unsafePerformIO $ do
     let handle1 = getHandle arr1
         handle2 = getHandle arr2
     I.broadcast_maximum handle1 handle2
@@ -397,7 +400,7 @@ maximum arr1 arr2 = NDArray $ unsafePerformIO $ do
 -- | Maximum elements in the given ndarray and given scalar.
 maximum' :: DType a
         => NDArray a -> a -> NDArray a
-maximum' arr scalar = NDArray $ unsafePerformIO $ do
+maximum' arr scalar = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
     I._maximum_scalar handle (realToFrac scalar)
 
@@ -406,7 +409,7 @@ maximum' arr scalar = NDArray $ unsafePerformIO $ do
 -- | Minimum elements in the given two ndarrays.
 minimum :: DType a
         => NDArray a -> NDArray a -> NDArray a
-minimum arr1 arr2 = NDArray $ unsafePerformIO $ do
+minimum arr1 arr2 = NDArray . unsafePerformIO $ do
     let handle1 = getHandle arr1
         handle2 = getHandle arr2
     I.broadcast_minimum handle1 handle2
@@ -416,7 +419,7 @@ minimum arr1 arr2 = NDArray $ unsafePerformIO $ do
 -- | Minimum elements in the given ndarray and given scalar.
 minimum' :: DType a
         => NDArray a -> a -> NDArray a
-minimum' arr scalar = NDArray $ unsafePerformIO $ do
+minimum' arr scalar = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
     I._minimum_scalar handle (realToFrac scalar)
 
@@ -425,7 +428,7 @@ minimum' arr scalar = NDArray $ unsafePerformIO $ do
 -- | If elements in the given two ndarrays are equal.
 equal :: DType a
       => NDArray a -> NDArray a -> NDArray a
-equal arr1 arr2 = NDArray $ unsafePerformIO $ do
+equal arr1 arr2 = NDArray . unsafePerformIO $ do
     let handle1 = getHandle arr1
         handle2 = getHandle arr2
     I.broadcast_equal handle1 handle2
@@ -435,7 +438,7 @@ equal arr1 arr2 = NDArray $ unsafePerformIO $ do
 -- | If elements in the given ndarray are equal to the given scalar.
 equal' :: DType a
        => NDArray a -> a -> NDArray a
-equal' arr scalar = NDArray $ unsafePerformIO $ do
+equal' arr scalar = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
     I._equal_scalar handle (realToFrac scalar)
 
@@ -444,7 +447,7 @@ equal' arr scalar = NDArray $ unsafePerformIO $ do
 -- | If elements in the given two ndarrays are not equal.
 notEqual :: DType a
           => NDArray a -> NDArray a -> NDArray a
-notEqual arr1 arr2 = NDArray $ unsafePerformIO $ do
+notEqual arr1 arr2 = NDArray . unsafePerformIO $ do
     let handle1 = getHandle arr1
         handle2 = getHandle arr2
     I.broadcast_not_equal handle1 handle2
@@ -454,7 +457,7 @@ notEqual arr1 arr2 = NDArray $ unsafePerformIO $ do
 -- | If elements in the given ndarray are equal to the given scalar.
 notEqual' :: DType a
         => NDArray a -> a -> NDArray a
-notEqual' arr scalar = NDArray $ unsafePerformIO $ do
+notEqual' arr scalar = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
     I._not_equal_scalar handle (realToFrac scalar)
 
@@ -463,7 +466,7 @@ notEqual' arr scalar = NDArray $ unsafePerformIO $ do
 -- | If elements in the first given ndarrays are greater than the second one.
 greater :: DType a
         => NDArray a -> NDArray a -> NDArray a
-greater arr1 arr2 = NDArray $ unsafePerformIO $ do
+greater arr1 arr2 = NDArray . unsafePerformIO $ do
     let handle1 = getHandle arr1
         handle2 = getHandle arr2
     I.broadcast_greater handle1 handle2
@@ -473,7 +476,7 @@ greater arr1 arr2 = NDArray $ unsafePerformIO $ do
 -- | If elements in the first given ndarrays are greater than the give scalar.
 greater' :: DType a
         => NDArray a -> a -> NDArray a
-greater' arr scalar = NDArray $ unsafePerformIO $ do
+greater' arr scalar = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
     I._greater_scalar handle (realToFrac scalar)
 
@@ -482,7 +485,7 @@ greater' arr scalar = NDArray $ unsafePerformIO $ do
 -- | If elements in the first given ndarrays are greater than or equal to the second one.
 greaterEqual :: DType a
         => NDArray a -> NDArray a -> NDArray a
-greaterEqual arr1 arr2 = NDArray $ unsafePerformIO $ do
+greaterEqual arr1 arr2 = NDArray . unsafePerformIO $ do
     let handle1 = getHandle arr1
         handle2 = getHandle arr2
     I.broadcast_greater_equal handle1 handle2
@@ -492,7 +495,7 @@ greaterEqual arr1 arr2 = NDArray $ unsafePerformIO $ do
 -- | If elements in the first given ndarrays are greater than or equal to the give scalar.
 greaterEqual' :: DType a
               => NDArray a -> a -> NDArray a
-greaterEqual' arr scalar = NDArray $ unsafePerformIO $ do
+greaterEqual' arr scalar = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
     I._greater_equal_scalar handle (realToFrac scalar)
 
@@ -501,7 +504,7 @@ greaterEqual' arr scalar = NDArray $ unsafePerformIO $ do
 -- | If elements in the first given ndarrays are lesser than the second one.
 lesser :: DType a
        => NDArray a -> NDArray a -> NDArray a
-lesser arr1 arr2 = NDArray $ unsafePerformIO $ do
+lesser arr1 arr2 = NDArray . unsafePerformIO $ do
     let handle1 = getHandle arr1
         handle2 = getHandle arr2
     I.broadcast_lesser handle1 handle2
@@ -511,7 +514,7 @@ lesser arr1 arr2 = NDArray $ unsafePerformIO $ do
 -- | If elements in the first given ndarrays are lesser than the give scalar.
 lesser' :: DType a
         => NDArray a -> a -> NDArray a
-lesser' arr scalar = NDArray $ unsafePerformIO $ do
+lesser' arr scalar = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
     I._lesser_scalar handle (realToFrac scalar)
 
@@ -520,7 +523,7 @@ lesser' arr scalar = NDArray $ unsafePerformIO $ do
 -- | If elements in the first given ndarrays are lesser than or equal to the second one.
 lesserEqual :: DType a
             => NDArray a -> NDArray a -> NDArray a
-lesserEqual arr1 arr2 = NDArray $ unsafePerformIO $ do
+lesserEqual arr1 arr2 = NDArray . unsafePerformIO $ do
     let handle1 = getHandle arr1
         handle2 = getHandle arr2
     I.broadcast_lesser_equal handle1 handle2
@@ -530,8 +533,80 @@ lesserEqual arr1 arr2 = NDArray $ unsafePerformIO $ do
 -- | If elements in the first given ndarrays are lesser than or equal to the give scalar.
 lesserEqual' :: DType a
              => NDArray a -> a -> NDArray a
-lesserEqual' arr scalar = NDArray $ unsafePerformIO $ do
+lesserEqual' arr scalar = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
     I._lesser_equal_scalar handle (realToFrac scalar)
 
 {-# INLINE lesserEqual' #-}
+
+{-------------------------------------------------------------------------------
+-- Neural Network
+-------------------------------------------------------------------------------}
+
+-- | Apply a linear transformation: /Y = X W^T + b/.
+fullyconnected :: DType a
+               => NDArray a -- ^ Input data.
+               -> NDArray a -- ^ Weight matrix.
+               -> NDArray a -- ^ Bias parameter.
+               -> Int       -- ^ Number of hidden nodes of the output.
+               -> NDArray a
+fullyconnected input weight bias n = NDArray . unsafePerformIO $ do
+    let handle1 = getHandle input
+        handle2 = getHandle weight
+        handle3 = getHandle bias
+    I.fullyconnected handle1 handle2 handle3 n nil
+
+-- Convolution Compute N-D convolution on (N+2)-D input.
+convolution :: DType a
+            => NDArray a    -- ^ Input data.
+            -> NDArray a    -- ^ Weight matrix.
+            -> NDArray a    -- ^ Bias parameter.
+            -> String       -- ^ Convolution kernel size: (h, w) or (d, h, w).
+            -> Int          -- ^ Convolution filter(channel) number.
+            -> NDArray a
+convolution input weight bias kernel n = NDArray . unsafePerformIO $ do
+    let handle1 = getHandle input
+        handle2 = getHandle weight
+        handle3 = getHandle bias
+    I.convolution handle1 handle2 handle3 kernel n nil
+
+-- | Elementwise activation function.
+activation :: DType a
+           => NDArray a -- ^ Input data to activation function.
+           -> String    -- ^ Activation function to be applied, one of {'relu', 'sigmoid', 'softrelu', 'tanh'}.
+           -> NDArray a
+activation input act = NDArray . unsafePerformIO $ do
+    let handle1 = getHandle input
+    I.activation handle1 act
+
+-- | Batch normalization.
+batchnorm :: DType a
+          => NDArray a  -- ^ Input data to batch normalization.
+          -> NDArray a  -- ^ Gamma array.
+          -> NDArray a  -- ^ Beta array.
+          -> NDArray a  
+batchnorm input weight bias = NDArray . unsafePerformIO $ do
+    let handle1 = getHandle input
+        handle2 = getHandle weight
+        handle3 = getHandle bias
+    I.batchnorm handle1 handle2 handle3 nil
+
+-- | Perform pooling on the input.
+pooling :: DType a
+        => NDArray a    -- ^ Input data to the pooling operator.
+        -> String       -- ^ Pooling kernel size: (y, x) or (d, y, x).
+        -> String       -- ^ Pooling type to be applied, one of {'avg', 'max', 'sum'}.
+        -> NDArray a
+pooling input kernel pooltype = NDArray . unsafePerformIO $ do
+    let handle1 = getHandle input
+    I.pooling handle1 kernel pooltype nil
+
+-- | Softmax with logit loss.
+softmaxoutput :: DType a
+              => NDArray a  -- ^ Input data.
+              -> NDArray a  -- ^ Ground truth label.
+              -> NDArray a
+softmaxoutput input label = NDArray . unsafePerformIO $ do
+    let handle1 = getHandle input
+        handle2 = getHandle label
+    I.softmaxoutput handle1 handle2 nil
