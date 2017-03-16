@@ -57,10 +57,11 @@ module MXNet.Core.HMap
     , dump
     ) where
 
-import           Data.Proxy (Proxy (..))
 import           GHC.TypeLits
 import           Data.List (intercalate)
 import           Data.Monoid ((<>))
+import           Data.Proxy (Proxy (..))
+import           Data.Typeable (Typeable, typeOf)
 
 data KV v = Symbol := v
 
@@ -176,9 +177,9 @@ instance ShowKV '[] where
     show' _ = []
     {-# INLINE show' #-}
 
-instance (KnownSymbol k, Show v, ShowKV kvs) => ShowKV (k ':= v ': kvs) where
+instance (KnownSymbol k, Typeable v, Show v, ShowKV kvs) => ShowKV (k ':= v ': kvs) where
     show' (Cons v kvs') = showImpl v : show' kvs'
-        where showImpl value = (symbolVal (Proxy :: Proxy k), show value)
+        where showImpl value = (symbolVal (Proxy :: Proxy k), if typeOf value == typeOf "" then (init . tail . show)  value else show value) -- special rule for string value.
     {-# INLINE show' #-}
 
 instance ShowKV kvs => Show (HMap kvs) where
