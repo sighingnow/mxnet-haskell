@@ -98,26 +98,62 @@ instance (DType a, Pretty a) => Show (NDArray a) where
         splitItems values (d:ds) s = MkPretty $ (\x -> splitItems values ds (s + (product ds) * x)) <$> ([0 .. (d - 1)] :: [Int])
 
 instance DType a => Num (NDArray a) where
-    (+) arr1 arr2 = NDArray $ unsafePerformIO $ do
+    (+) arr1 arr2 = NDArray . unsafePerformIO $ do
         let handle1 = getHandle arr1
             handle2 = getHandle arr2
         I.broadcast_add handle1 handle2
-    (-) arr1 arr2 = NDArray $ unsafePerformIO $ do
+    (-) arr1 arr2 = NDArray . unsafePerformIO $ do
         let handle1 = getHandle arr1
             handle2 = getHandle arr2
         I.broadcast_sub handle1 handle2
-    (*) arr1 arr2 = NDArray $ unsafePerformIO $ do
+    (*) arr1 arr2 = NDArray . unsafePerformIO $ do
         let handle1 = getHandle arr1
             handle2 = getHandle arr2
         I.broadcast_mul handle1 handle2
-    abs arr1 = NDArray $ unsafePerformIO $ do
+    abs arr1 = NDArray . unsafePerformIO $ do
         let handle1 = getHandle arr1
         I.abs handle1
-    negate arr1 = NDArray $ unsafePerformIO $ do
+    negate arr1 = NDArray . unsafePerformIO $ do
         let handle1 = getHandle arr1
         I.negative handle1
     signum = error "Unsupported operation: signum(NDArray)"
     fromInteger = error "Unsupported operation: fromInteger(NDArray)"
+
+instance DType a => Fractional (NDArray a) where
+    (/) arr1 arr2 = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle arr1
+            handle2 = getHandle arr2
+        I.broadcast_div handle1 handle2
+    fromRational = error "Unsupported operation: fromRational(NDArray)"
+
+instance DType a => Floating (NDArray a) where
+    exp arr1 = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle arr1
+        I.exp handle1
+    log arr1 = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle arr1
+        I.log handle1
+    sqrt arr1 = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle arr1
+        I.sqrt handle1
+    sin arr1 = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle arr1
+        I.sin handle1
+    cos arr1 = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle arr1
+        I.cos handle1
+    tan arr1 = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle arr1
+        I.tan handle1
+    sinh arr1 = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle arr1
+        I.sinh handle1
+    cosh arr1 = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle arr1
+        I.cosh handle1
+    tanh arr1 = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle arr1
+        I.tanh handle1
 
 -- | Context definition.
 --
@@ -279,7 +315,7 @@ array :: DType a
       -> IO (NDArray a)
 array sh = makeNDArray sh defaultContext
 
--- | Add a scalar to a narray.
+-- | Add a scalar to a ndarray.
 (.+) :: DType a
       => NDArray a -> a -> NDArray a
 (.+) arr value = NDArray . unsafePerformIO $ do
@@ -288,16 +324,16 @@ array sh = makeNDArray sh defaultContext
 
 infixl 6 .+
 
--- | Mutably add a scalar to a narray, the argument ndarray will be modified as the result.
+{-# INLINE (.+) #-}
+
+-- | Mutably add a scalar to a ndarray, the argument ndarray will be modified as the result.
 (.+=) :: DType a
       => NDArray a -> a -> IO ()
 (.+=) arr value = do
     let handle = getHandle arr
     I._plus_scalar' handle (realToFrac value) [handle]
 
-{-# INLINE (.+) #-}
-
--- | Subtract a scalar from a narray.
+-- | Subtract a scalar from a ndarray.
 (.-) :: DType a
       => NDArray a -> a -> NDArray a
 (.-) arr value = NDArray . unsafePerformIO $ do
@@ -308,6 +344,17 @@ infixl 6 .-
 
 {-# INLINE (.-) #-}
 
+-- | A ndarray is subtracted by a scalar.
+(..-) :: DType a
+      => a -> NDArray a -> NDArray a
+(..-) value arr = NDArray . unsafePerformIO $ do
+    let handle = getHandle arr
+    I._rminus_scalar handle (realToFrac value)
+
+infixl 6 ..-
+
+{-# INLINE (..-) #-}
+
 -- | Subtract a scalar from a ndarray, the argument ndarray will be modified as the result.
 (.-=) :: DType a
       => NDArray a -> a -> IO ()
@@ -315,7 +362,7 @@ infixl 6 .-
     let handle = getHandle arr
     I._minus_scalar' handle (realToFrac value) [handle]
 
--- | Multiply a scalar to a narray.
+-- | Multiply a scalar to a ndarray.
 (.*) :: DType a
       => NDArray a -> a -> NDArray a
 (.*) arr value = NDArray . unsafePerformIO $ do
@@ -333,7 +380,7 @@ infixl 7 .*
     let handle = getHandle arr
     I._mul_scalar' handle (realToFrac value) [handle]
 
--- | Divide a scalar from a narray.
+-- | Divide a scalar from a ndarray.
 (./) :: DType a
       => NDArray a -> a -> NDArray a
 (./) arr value = NDArray . unsafePerformIO $ do
@@ -343,6 +390,17 @@ infixl 7 .*
 infixl 7 ./
 
 {-# INLINE (./) #-}
+
+-- | Divide a scalar with a ndarray.
+(../) :: DType a
+      => a -> NDArray a  -> NDArray a
+(../) value arr = NDArray . unsafePerformIO $ do
+    let handle = getHandle arr
+    I._rdiv_scalar handle (realToFrac value)
+
+infixl 7 ../
+
+{-# INLINE (../) #-}
 
 -- | Divide a scalar from a ndarray, the argument ndarray will be modified as the result.
 (./=) :: DType a
@@ -369,7 +427,7 @@ infixl 8 .^
     let handle = getHandle arr
     I._power_scalar' handle (realToFrac value) [handle]
 
--- | Power of a narray, use a ndarray as exponent.
+-- | Power of a ndarray, use a ndarray as exponent.
 (..^) :: DType a
       => a -> NDArray a -> NDArray a
 (..^) value arr = NDArray . unsafePerformIO $ do
