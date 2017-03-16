@@ -8,7 +8,7 @@
 -- Updatable heterogeneous map.
 --
 -- @
--- > let a = add @"a" (1 :: Int) empty
+-- > let a = add @"a" (1 :: Int) nil
 -- > a
 -- [a = 1]
 -- > let b = update @"a" (+1) a
@@ -45,7 +45,7 @@ module MXNet.Core.HMap
     , ShowKV (..)
     , MatchKVList (..)
       -- * Operations on HMap.
-    , empty
+    , nil
     , add
     , add'
     , (.+.)
@@ -100,10 +100,10 @@ instance (InDict k v kvs, 'Yes k ~ FindKV k v (k' ':= v' ': kvs)) => InDict k v 
     {-# INLINE update' #-}
 
 -- | Create an empty HMap.
-empty :: HMap '[]
-empty = HMap Nil
+nil :: HMap '[]
+nil = HMap Nil
 
-{-# INLINE empty #-}
+{-# INLINE nil #-}
 
 -- | Add a key-value pair into the HMap (via TypeApplications).
 add :: forall k v kvs. 'No ~ FindKV k v kvs => v -> HMap kvs -> HMap (k ':= v ': kvs)
