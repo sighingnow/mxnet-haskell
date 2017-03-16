@@ -628,8 +628,8 @@ mxSymbolListAuxiliaryStates symbol = do
     { id `SymbolHandle'
     , id `MXUInt'
     , withStringArray* `[String]'
-    , id `Ptr MXUInt'
-    , id `Ptr MXUInt'
+    , withIntegralArray* `[Int]'
+    , withIntegralArray* `[Int]'
     , alloca- `MXUInt' peek*
     , alloca- `Ptr MXUInt' peek*
     , alloca- `Ptr (Ptr MXUInt)' peek*
@@ -643,37 +643,38 @@ mxSymbolListAuxiliaryStates symbol = do
     } -> `Int' #}
 
 -- | Infer shape of unknown input shapes given the known one.
-mxSymbolInferShape :: SymbolHandle                          -- ^ Symbol handle.
-                   -> MXUInt                                -- ^ Number of input arguments.
-                   -> [String]                              -- ^ Number of input arguments.
-                   -> Ptr MXUInt                            -- ^ Keys of keyword arguments, optional.
-                   -> Ptr MXUInt                            -- ^ The head pointer of the rows in CSR
-                   -> IO (Int,
-                          (MXUInt, [MXUInt], [Ptr MXUInt]),
-                          (MXUInt, [MXUInt], [Ptr MXUInt]),
-                          (MXUInt, [MXUInt], [Ptr MXUInt]),
-                          Int)                              -- ^ Return the in, out and auxiliary
-                                                            -- shape size, ndim and data (array
-                                                            -- of pointers to head of the input
-                                                            -- shape), and whether infer shape
-                                                            -- completes or more information is
-                                                            -- needed.
-mxSymbolInferShape sym argc keys indptr shapedata = do
-    (res, in_size, in_ndim, in_data, out_size, out_ndim, out_data, aux_size, aux_ndim, aux_data, success) <- mxSymbolInferShapeImpl sym argc keys indptr shapedata
-    in_ndim' <- peekArray (fromIntegral in_size) in_ndim
+mxSymbolInferShape
+    :: SymbolHandle                          -- ^ Symbol handle.
+    -> [String]                              -- ^ Keys of keyword arguments, optional.
+    -> [Int]                                 -- ^ The head pointer of the rows in CSR.
+    -> [Int]                                 -- ^ The content of the CSR.
+    -> IO (Int, [[Int]], [[Int]], [[Int]])   -- ^ Return the in, out and auxiliary
+                                             -- shape size, ndim and data (array
+                                             -- of pointers to head of the input
+                                             -- shape), and whether infer shape
+                                             -- completes or more information is
+                                             -- needed.
+mxSymbolInferShape sym keys ind shapedata = do
+    let argc = fromIntegral (length keys)   -- Number of input arguments.
+    -- Notice: the complete result are ignored for simplification.
+    (res, in_size, in_ndim, in_data, out_size, out_ndim, out_data, aux_size, aux_ndim, aux_data, _) <- mxSymbolInferShapeImpl sym argc keys ind shapedata
+    in_ndim' <- peekIntegralArray (fromIntegral in_size) in_ndim
     in_data' <- peekArray (fromIntegral in_size) in_data
-    out_ndim' <- peekArray (fromIntegral out_size) out_ndim
+    in_data'' <- mapM (uncurry peekIntegralArray) (zip in_ndim' in_data')
+    out_ndim' <- peekIntegralArray (fromIntegral out_size) out_ndim
     out_data' <- peekArray (fromIntegral out_size) out_data
-    aux_ndim' <- peekArray (fromIntegral aux_size) aux_ndim
+    out_data'' <- mapM (uncurry peekIntegralArray) (zip out_ndim' out_data')
+    aux_ndim' <- peekIntegralArray (fromIntegral aux_size) aux_ndim
     aux_data' <- peekArray (fromIntegral aux_size) aux_data
-    return (res, (in_size, in_ndim', in_data'), (out_size, out_ndim', out_data'), (aux_size, aux_ndim', aux_data'), success)
+    aux_data'' <- mapM (uncurry peekIntegralArray) (zip aux_ndim' aux_data')
+    return (res, in_data'', out_data'', aux_data'')
 
 {#fun MXSymbolInferShapePartial as mxSymbolInferShapePartialImpl
     { id `SymbolHandle'
     , id `MXUInt'
     , withStringArray* `[String]'
-    , id `Ptr MXUInt'
-    , id `Ptr MXUInt'
+    , withIntegralArray* `[Int]'
+    , withIntegralArray* `[Int]'
     , alloca- `MXUInt' peek*
     , alloca- `Ptr MXUInt' peek*
     , alloca- `Ptr (Ptr MXUInt)' peek*
@@ -688,47 +689,60 @@ mxSymbolInferShape sym argc keys indptr shapedata = do
 
 -- | Partially infer shape of unknown input shapes given the known one.
 mxSymbolInferShapePartial
-    :: SymbolHandle                             -- ^ Symbol handle.
-    -> MXUInt                                   -- ^ Number of input arguments.
-    -> [String]                                 -- ^ Number of input arguments.
-    -> Ptr MXUInt                               -- ^ Keys of keyword arguments, optional.
-    -> Ptr MXUInt                               -- ^ The head pointer of the rows in CSR
-    -> IO (Int,
-           (MXUInt, [MXUInt], [Ptr MXUInt]),
-           (MXUInt, [MXUInt], [Ptr MXUInt]),
-           (MXUInt, [MXUInt], [Ptr MXUInt]),
-           Int)                                 -- ^ Return the in, out and auxiliary array's
-                                                -- shape size, ndim and data (array of pointers
-                                                -- to head of the input shape), and whether
-                                                -- infer shape completes or more information is
-                                                -- needed.
-mxSymbolInferShapePartial sym argc keys indptr shapedata = do
-    (res, in_size, in_ndim, in_data, out_size, out_ndim, out_data, aux_size, aux_ndim, aux_data, success) <- mxSymbolInferShapePartialImpl sym argc keys indptr shapedata
-    in_ndim' <- peekArray (fromIntegral in_size) in_ndim
+    :: SymbolHandle                         -- ^ Symbol handle.
+    -> [String]                              -- ^ Keys of keyword arguments, optional.
+    -> [Int]                             -- ^ The head pointer of the rows in CSR.
+    -> [Int]                             -- ^ The content of the CSR.
+    -> IO (Int, [[Int]], [[Int]], [[Int]])  -- ^ Return the in, out and auxiliary array's
+                                            -- shape size, ndim and data (array of pointers
+                                            -- to head of the input shape), and whether
+                                            -- infer shape completes or more information is
+                                            -- needed.
+mxSymbolInferShapePartial sym keys ind shapedata = do
+    let argc = fromIntegral (length keys)   -- Number of input arguments.
+    -- Notice: the complete result are ignored for simplification.
+    (res, in_size, in_ndim, in_data, out_size, out_ndim, out_data, aux_size, aux_ndim, aux_data, _) <- mxSymbolInferShapePartialImpl sym argc keys ind shapedata
+    in_ndim' <- peekIntegralArray (fromIntegral in_size) in_ndim
     in_data' <- peekArray (fromIntegral in_size) in_data
-    out_ndim' <- peekArray (fromIntegral out_size) out_ndim
+    in_data'' <- mapM (uncurry peekIntegralArray) (zip in_ndim' in_data')
+    out_ndim' <- peekIntegralArray (fromIntegral out_size) out_ndim
     out_data' <- peekArray (fromIntegral out_size) out_data
-    aux_ndim' <- peekArray (fromIntegral aux_size) aux_ndim
+    out_data'' <- mapM (uncurry peekIntegralArray) (zip out_ndim' out_data')
+    aux_ndim' <- peekIntegralArray (fromIntegral aux_size) aux_ndim
     aux_data' <- peekArray (fromIntegral aux_size) aux_data
-    return (res, (in_size, in_ndim', in_data'), (out_size, out_ndim', out_data'), (aux_size, aux_ndim', aux_data'), success)
+    aux_data'' <- mapM (uncurry peekIntegralArray) (zip aux_ndim' aux_data')
+    return (res, in_data'', out_data'', aux_data'')
 
--- | Infer type of unknown input types given the known one.
-{#fun MXSymbolInferType as mxSymbolInferType
+{#fun MXSymbolInferType as mxSymbolInferTypeImpl
     { id `SymbolHandle'             -- ^ Symbol handle.
     , id `MXUInt'                   -- ^ Number of input arguments.
     , withStringArray* `[String]'   -- ^ Key of keyword arguments, optional.
-    , id `Ptr CInt'                 -- ^ The content of the CSR.
+    , withIntegralArray* `[Int]'    -- ^ The content of the CSR.
     , alloca- `MXUInt' peek*
-    , alloca- `Ptr CInt'
+    , alloca- `Ptr CInt' peek*
     , alloca- `MXUInt' peek*
-    , alloca- `Ptr CInt'
+    , alloca- `Ptr CInt' peek*
     , alloca- `MXUInt' peek*
-    , alloca- `Ptr CInt'
+    , alloca- `Ptr CInt' peek*
     , alloca- `Int' peekIntegral*
     } -> `Int' -- ^ Return the size and an array of pointers to head the input, output and
                -- auxiliary type, as well as whether infer type completes or more information
                -- is needed.
     #}
+
+-- | Infer type of unknown input types given the known one.
+mxSymbolInferType :: SymbolHandle                   -- ^ Symbol handle.
+                  -> [String]                       -- ^ Input arguments.
+                  -> IO (Int, [Int], [Int], [Int])  -- ^ Return arg_types, out_types and aux_types.
+mxSymbolInferType handle args = do
+    let nargs = fromIntegral (length args)
+        csr = []
+    -- Notice: the complete result are ignored for simplification.
+    (res, narg, parg, nout, pout, naux, paux, _) <- mxSymbolInferTypeImpl handle nargs args csr
+    args <- peekIntegralArray (fromIntegral narg) parg
+    outs <- peekIntegralArray (fromIntegral nout) pout
+    auxs <- peekIntegralArray (fromIntegral naux) paux
+    return (res, args, outs, auxs)
 
 -------------------------------------------------------------------------------
 

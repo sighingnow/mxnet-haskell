@@ -19,6 +19,7 @@ module C2HS.C.Extra.Marshal
     , peekString
     , peekStringArray
     , withStringArray
+    , peekIntegralArray
     , withIntegralArray
     ) where
 
@@ -66,15 +67,12 @@ withStringArray ss f = do
     ps <- mapM (\s -> withCString s return) ss
     withArray ps f
 
-{-
--- | Peek an array of Integral and the result's length is given.
-peekStringArray :: Integral n => n -> Ptr (CInt) -> IO [String]
-peekStringArray n p = peekArray (fromIntegral n) p >>= mapM peekCString
+-- | Peek an array of integral values and the result's length is given.
+peekIntegralArray :: (Integral n, Integral m, Storable m) => Int -> Ptr m -> IO [n]
+peekIntegralArray n p = (map fromIntegral) <$> peekArray n p
 
-{-# SPECIALIZE peekStringArray :: Int -> Ptr (Ptr CChar) -> IO [String] #-}
-{-# SPECIALIZE peekStringArray :: CUInt -> Ptr (Ptr CChar) -> IO [String] #-}
-
--}
+{-# SPECIALIZE peekIntegralArray :: Int -> Ptr CInt -> IO [Int] #-}
+{-# SPECIALIZE peekIntegralArray :: Int -> Ptr CUInt -> IO [Int] #-}
 
 -- | Use an array of Integral as argument.
 withIntegralArray :: (Integral a, Integral b, Storable b) => [a] -> (Ptr b -> IO c) -> IO c
