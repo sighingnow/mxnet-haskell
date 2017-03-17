@@ -25,11 +25,10 @@ module MXNet.Core.Base.Internal.TH.Symbol where
 import Data.HashMap.Strict (union, fromList, toList)
 import Data.Proxy
 
-import MXNet.Core.HMap
-import MXNet.Core.Internal.Types.Raw
-import MXNet.Core.Base.Internal.Raw
-import MXNet.Core.NNVM.Base.Internal.Raw (nnGetOpHandle, nnSymbolCompose)
+import MXNet.Core.Base.HMap
+import MXNet.Core.Base.Internal
 import MXNet.Core.Base.Internal.TH (registerSymbolOps)
+import MXNet.Core.NNVM.Internal (nnGetOpHandle, nnSymbolCompose)
 import Prelude hiding (sin, sinh, cos, cosh, tan, tanh, min, max, round, floor,
                        abs, sum, sqrt, log, exp, flip, concat)
 

@@ -9,13 +9,13 @@
 --
 module MXNet.Core.Base.Internal.TH where
 
-import Data.Char
-import Data.List
-import Data.Monoid
-import Language.Haskell.TH
+import           Data.Char
+import           Data.List
+import           Data.Monoid
+import           Language.Haskell.TH
 
-import MXNet.Core.NNVM.Base
-import MXNet.Core.Base.Internal.Raw
+import           MXNet.Core.NNVM.Internal
+import           MXNet.Core.Base.Internal
 
 -------------------------------------------------------------------------------
 

@@ -7,149 +7,54 @@
 --
 -- Interfaces in core module of MXNet.
 --
-module MXNet.Core.Base (
-      -- * Data type definitions
-      -- ** Type alias
-      MXUInt
-    , MXFloat
-      -- ** Handlers and Creators
-    , NDArrayHandle
-    , FunctionHandle
-    , AtomicSymbolCreator
-    , SymbolHandle
-    , AtomicSymbolHandle
-    , ExecutorHandle
-    , DataIterCreator
-    , DataIterHandle
-    , KVStoreHandle
-    , RecordIOHandle
-    , RtcHandle
-      -- ** Callback types
-    , ExecutorMonitorCallback
-    , CustomOpPropCreator
-    , MXKVStoreUpdater
-    , MXKVStoreServerController
-      -- * Error handling.
-    , mxGetLastError
-      -- * Global State setups
-    , mxRandomSeed
-    , mxNotifyShutdown
-    , mxSetProfilerConfig
-    , mxSetProfilerState
-    , mxDumpProfile
-      -- * NDArray creation and deletion
-    , mxNDArrayCreateNone
-    , mxNDArrayCreate
-    , mxNDArrayCreateEx
-    , mxNDArrayLoadFromRawBytes
-    , mxNDArraySaveRawBytes
-    , mxNDArraySave
-    , mxNDArrayLoad
-    , mxNDArraySyncCopyFromCPU
-    , mxNDArraySyncCopyToCPU
-    , mxNDArrayWaitToRead
-    , mxNDArrayWaitToWrite
-    , mxNDArrayWaitAll
-    , mxNDArrayFree
-    , mxNDArraySlice
-    , mxNDArrayAt
-    , mxNDArrayReshape
-    , mxNDArrayGetShape
-    , mxNDArrayGetData
-    , mxNDArrayGetDType
-    , mxNDArrayGetContext
-      -- * Functions on NDArray
-    , mxListFunctions
-    , mxGetFunction
-    , mxFuncGetInfo
-    , mxFuncDescribe
-    , mxFuncInvoke
-    , mxFuncInvokeEx
-    , mxImperativeInvoke
-      -- * Symbolic configuration generation
-    , mxListAllOpNames
-    , mxSymbolListAtomicSymbolCreators
-    , mxSymbolGetAtomicSymbolName
-    , mxSymbolGetAtomicSymbolInfo
-    , mxSymbolCreateAtomicSymbol
-    , mxSymbolCreateVariable
-    , mxSymbolCreateGroup
-    , mxSymbolCreateFromFile
-    , mxSymbolCreateFromJSON
-    , mxSymbolSaveToFile
-    , mxSymbolSaveToJSON
-    , mxSymbolFree
-    , mxSymbolCopy
-    , mxSymbolPrint
-    , mxSymbolGetName
-    , mxSymbolGetAttr
-    , mxSymbolSetAttr
-    , mxSymbolListAttr
-    , mxSymbolListAttrShallow
-    , mxSymbolListArguments
-    , mxSymbolListOutputs
-    , mxSymbolGetInternals
-    , mxSymbolGetOutput
-    , mxSymbolListAuxiliaryStates
-    , mxSymbolCompose
-    , mxSymbolGrad
-    , mxSymbolInferShape
-    , mxSymbolInferShapePartial
-    , mxSymbolInferType
-      -- * Executor interface
-    , mxExecutorFree
-    , mxExecutorPrint
-    , mxExecutorForward
-    , mxExecutorBackward
-    , mxExecutorOutputs
-    , mxExecutorBind
-    , mxExecutorBindX
-    , mxExecutorBindEX
-    , mxExecutorSetMonitorCallback
-      -- * IO Interface
-    , mxListDataIters
-    , mxDataIterCreateIter
-    , mxDataIterGetIterInfo
-    , mxDataIterFree
-    , mxDataIterNext
-    , mxDataIterBeforeFirst
-    , mxDataIterGetData
-    , mxDataIterGetIndex
-    , mxDataIterGetPadNum
-    , mxDataIterGetLabel
-      -- * Basic KVStore interface
-    , mxInitPSEnv
-    , mxKVStoreCreate
-    , mxKVStoreFree
-    , mxKVStoreInit
-    , mxKVStorePush
-    , mxKVStorePull
-    , mxKVStoreSetUpdater
-    , mxKVStoreGetType
-      -- * Advanced KVStore for multi-machines
-    , mxKVStoreGetRank
-    , mxKVStoreGetGroupSize
-    , mxKVStoreIsWorkerNode
-    , mxKVStoreIsServerNode
-    , mxKVStoreIsSchedulerNode
-    , mxKVStoreBarrier
-    , mxKVStoreSetBarrierBeforeExit
-    , mxKVStoreRunServer
-    , mxKVStoreSendCommmandToServers
-    , mxKVStoreGetNumDeadNode
-    , mxRecordIOWriterCreate
-    , mxRecordIOWriterFree
-    , mxRecordIOWriterWriteRecord
-    , mxRecordIOWriterTell
-    , mxRecordIOReaderCreate
-    , mxRecordIOReaderFree
-    , mxRecordIOReaderReadRecord
-    , mxRecordIOReaderSeek
-    , mxRtcCreate
-    , mxRtcPush
-    , mxRtcFree
-    , mxCustomOpRegister
-    ) where
 
-import MXNet.Core.Internal.Types.Raw
-import MXNet.Core.Base.Internal.Raw
+module MXNet.Core.Base
+    ( -- * Necessary raw functions
+      mxGetLastError
+    , mxListAllOpNames
+      -- * NDArray
+    , NDArray
+    , waitAll
+    , makeEmptyNDArray
+    , makeNDArray
+    , ndshape
+    , ndsize
+    , context
+    , slice
+    , at
+    , reshape
+    , waitToRead
+    , onehotEncode
+    , zeros
+    , ones
+    , full
+    , array
+      -- * Symbol
+    , Symbol
+    , variable
+    , getName
+    , getAttr
+    , setAttr
+    , infershape
+    , grad
+    , listInputs
+    , listOutputs
+    , listAuxiliaries
+      -- * Executor
+    , Executor
+    , makeExecutor
+    , forward
+    , backward
+    , getOutput
+      -- * DType
+    , module MXNet.Core.Base.DType
+      -- * Heterogeneous Dictionary.
+    , module MXNet.Core.Base.HMap
+    )where
+
+import MXNet.Core.Base.DType
+import MXNet.Core.Base.Executor
+import MXNet.Core.Base.HMap
+import MXNet.Core.Base.NDArray
+import MXNet.Core.Base.Symbol
+import MXNet.Core.Base.Internal

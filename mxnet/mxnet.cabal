@@ -15,27 +15,33 @@ cabal-version:              >= 1.10
 Library
     exposed-modules:
         MXNet.Core.Base
-        MXNet.Core.HMap
-        MXNet.Core.NDArray
-        MXNet.Core.Symbol
-        MXNet.Core.Predict.Base
-        MXNet.Core.NNVM.Base
-    other-modules:
+        MXNet.Core.Base.DType
+        MXNet.Core.Base.HMap
+        MXNet.Core.Base.Executor
+        MXNet.Core.Base.NDArray
+        MXNet.Core.Base.Symbol
+        MXNet.Core.Base.Internal
+        MXNet.Core.Types.Internal
+        MXNet.Core.Predict.Internal
+        MXNet.Core.NNVM.Internal
         MXNet.Core.Base.Internal.TH.NDArray
         MXNet.Core.Base.Internal.TH.Symbol
+    other-modules:
         MXNet.Core.Base.Internal.TH
-        MXNet.Core.Internal.Types.Raw
         MXNet.Core.Base.Internal.Raw
+        MXNet.Core.Types.Internal.Raw
         MXNet.Core.Predict.Internal.Raw
-        MXNet.Core.NNVM.Base.Internal.Raw
+        MXNet.Core.NNVM.Internal.Raw
     hs-source-dirs:         src
     build-tools:            c2hs
     ghc-options:            -Wall -lmxnet
     default-language:       Haskell2010
     build-depends:          base >= 4.7 && < 5.0
                           , c2hs-extra >= 0.1
-                          , array >= 0.5.1.0
+                          , pretty >= 1.1
                           , template-haskell >= 2.10.0.0
+                          , unordered-containers >= 0.2.7.0
+                          , vector >= 0.10.0.0
     extra-libraries:        mxnet
 
 Test-Suite mxnet-test

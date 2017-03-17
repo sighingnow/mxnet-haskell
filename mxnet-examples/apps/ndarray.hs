@@ -1,6 +1,6 @@
 -----------------------------------------------------------
 -- |
--- copyright:                   (c) 2016 Tao He
+-- copyright:                   (c) 2016-2017 Tao He
 -- license:                     MIT
 -- maintainer:                  sighingnow@gmail.com
 --
@@ -8,9 +8,9 @@
 --
 {-# LANGUAGE OverloadedLists #-}
 
-import           MXNet.Core.NDArray
+import           MXNet.Core.Base
 
 main :: IO ()
 main = do
     arr <- array [2,3,4] [1..(2*3*4)] :: IO (NDArray Float)
-    shape arr >>= print
+    ndshape arr >>= print

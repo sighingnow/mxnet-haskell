@@ -1,6 +1,6 @@
 -----------------------------------------------------------
 -- |
--- copyright:                   (c) 2016 Tao He
+-- copyright:                   (c) 2016-2017 Tao He
 -- license:                     MIT
 -- maintainer:                  sighingnow@gmail.com
 --
@@ -16,11 +16,9 @@ import           Test.Tasty.QuickCheck
 import           Test.QuickCheck.Monadic
 
 import           MXNet.Core.Base
-import           MXNet.Core.HMap
-import           MXNet.Core.NDArray
 
 main :: IO ()
-main = defaultMain mxnetTest >> void mxNotifyShutdown
+main = mxListAllOpNames >> defaultMain mxnetTest
 
 mxnetTest :: TestTree
 mxnetTest = testGroup "MXNet Test Suite"
@@ -31,7 +29,7 @@ mxnetTest = testGroup "MXNet Test Suite"
 hmapTest :: TestTree
 hmapTest = testGroup "HMap"
     [ testProperty "Get after add" $
-        get @"a" (add @"a" (1 :: Int) empty) === 1
+        get @"a" (add @"a" (1 :: Int) nil) === 1
     ]
 
 ndarrayTest :: TestTree
@@ -40,14 +38,14 @@ ndarrayTest = testGroup "NDArray"
         let sh = [2, 3, 4, 5]
         sh' <- run $ do
             arr <- array sh [1..(2*3*4*5)] :: IO (NDArray Float)
-            (_, sh'') <- shape arr
+            (_, sh'') <- ndshape arr
             return sh''
         stop $ sh === sh'
     , testProperty "NDArray reshape should keep size" $ monadicIO $ do
         let sh = [2, 3, 4, 5]
         s <- run $ do
             arr <- array sh [1..(2*3*4*5)] :: IO (NDArray Float)
-            size arr
+            ndsize arr
         stop $ product sh === s
     ]
 

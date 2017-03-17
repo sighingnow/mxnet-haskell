@@ -1,13 +1,13 @@
 -----------------------------------------------------------
 -- |
--- module:                      MXNet.Core.NNVM.Base
+-- module:                      MXNet.Core.NNVM.Internal
 -- copyright:                   (c) 2016-2017 Tao He
 -- license:                     MIT
 -- maintainer:                  sighingnow@gmail.com
 --
 -- Interfaces in core module of NNVM.
 --
-module MXNet.Core.NNVM.Base (
+module MXNet.Core.NNVM.Internal (
       -- * Re-export data type definitions
       NNUInt
     , OpHandle
@@ -45,5 +45,5 @@ module MXNet.Core.NNVM.Base (
     , nnGraphApplyPasses
     ) where
 
-import MXNet.Core.Internal.Types.Raw
-import MXNet.Core.NNVM.Base.Internal.Raw
+import MXNet.Core.Types.Internal (NNUInt, OpHandle, SymbolHandle, GraphHandle)
+import MXNet.Core.NNVM.Internal.Raw

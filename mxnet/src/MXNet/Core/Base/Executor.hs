@@ -1,6 +1,6 @@
 -----------------------------------------------------------
 -- |
--- module:                      MXNet.Core.Symbol
+-- module:                      MXNet.Core.Base.Executor
 -- copyright:                   (c) 2016 Tao He
 -- license:                     MIT
 -- maintainer:                  sighingnow@gmail.com
@@ -9,12 +9,12 @@
 --
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
-module MXNet.Core.Executor where
+module MXNet.Core.Base.Executor where
 
 import           Control.Monad
-import           MXNet.Core.Base
-import           MXNet.Core.DType
-import           MXNet.Core.NDArray (NDArray(NDArray))
+import           MXNet.Core.Base.Internal
+import           MXNet.Core.Base.DType
+import           MXNet.Core.Base.NDArray (NDArray(NDArray))
 
 -- | Type alias for variable.
 newtype Executor a = Executor { getHandle :: ExecutorHandle }

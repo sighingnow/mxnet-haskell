@@ -1,14 +1,14 @@
 -----------------------------------------------------------
 -- |
--- module:                      MXNet.Core.Predict.Base
--- copyright:                   (c) 2016 Tao He
+-- module:                      MXNet.Core.Predict.Internal
+-- copyright:                   (c) 2016-2017 Tao He
 -- license:                     MIT
 -- maintainer:                  sighingnow@gmail.com
 --
 -- Predict interfaces in core module of MXNet.
 --
-module MXNet.Core.Predict.Base (
-      -- * Data types
+module MXNet.Core.Predict.Internal
+    ( -- * Data types
       PredictorHandle
     , NDListHandle
       -- * Re-exports functions.
@@ -26,6 +26,7 @@ module MXNet.Core.Predict.Base (
     , mxNDListFree
     ) where
 
-import MXNet.Core.Internal.Types.Raw ( PredictorHandle, NDListHandle )
-import MXNet.Core.Base.Internal.Raw ( mxGetLastError )
+import MXNet.Core.Types.Internal ( PredictorHandle, NDListHandle )
+import MXNet.Core.Base.Internal ( mxGetLastError )
 import MXNet.Core.Predict.Internal.Raw
+

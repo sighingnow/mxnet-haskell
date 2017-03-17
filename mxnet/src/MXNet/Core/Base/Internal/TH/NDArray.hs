@@ -25,11 +25,10 @@ module MXNet.Core.Base.Internal.TH.NDArray where
 import Data.HashMap.Strict (union, fromList, toList)
 import Data.Proxy
 
-import MXNet.Core.HMap
-import MXNet.Core.Internal.Types.Raw
-import MXNet.Core.Base.Internal.Raw (mxImperativeInvoke)
-import MXNet.Core.NNVM.Base.Internal.Raw (nnGetOpHandle)
+import MXNet.Core.Base.HMap
+import MXNet.Core.Base.Internal
 import MXNet.Core.Base.Internal.TH (registerNDArrayOps)
+import MXNet.Core.NNVM.Internal (nnGetOpHandle)
 import Prelude hiding (sin, sinh, cos, cosh, tan, tanh, min, max, round, floor,
                        abs, sum, sqrt, log, exp, flip, concat)
 

@@ -1,26 +1,16 @@
 -----------------------------------------------------------
 -- |
--- module:                      MXNet.Core.NDArray
--- copyright:                   (c) 2016 Tao He
+-- module:                      MXNet.Core.Base.NDArray
+-- copyright:                   (c) 2016-2017 Tao He
 -- license:                     MIT
 -- maintainer:                  sighingnow@gmail.com
 --
 -- NDArray module, provide an imperative-style programming interface.
 --
-{-# OPTIONS_GHC -Wno-orphans #-}
-{-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# OPTIONS_GHC -Wno-unused-do-bind #-}
-
 {-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE OverloadedLists #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
-module MXNet.Core.NDArray where
+module MXNet.Core.Base.NDArray where
 
 import           Control.Monad
 import           Data.Int
@@ -35,34 +25,13 @@ import           GHC.Exts (IsList(..))
 import           Text.PrettyPrint.Annotated.HughesPJClass (Pretty(..), prettyShow)
 import           System.IO.Unsafe (unsafePerformIO)
 
-import           MXNet.Core.Base
-import           MXNet.Core.DType
+import           MXNet.Core.Base.DType
+import           MXNet.Core.Base.Internal
 import qualified MXNet.Core.Base.Internal.TH.NDArray as I
-import           MXNet.Core.HMap
+import           MXNet.Core.Base.HMap
 
 -- | NDArray type alias.
 newtype NDArray a = NDArray { getHandle :: NDArrayHandle }
-
--- | Wrapper for pretty print multiple dimensions matrices.
-data PrettyWrapper = forall a. Pretty a => MkPretty { runPretty :: a }
-
--- | Destruct pretty
-instance Pretty PrettyWrapper where
-    pPrint (MkPretty inner) = pPrint inner
-
-instance (DType a, Pretty a) => Show (NDArray a) where
-    -- TODO display more related information.
-    show array = unsafePerformIO $ do
-        (_, dims) <- shape array
-        values <- items array
-        let info = show dims
-            body = prettyShow . splitItems values dims $ 0
-        return ("NDArray " <> info <> "\n" <> body)
-      where
-        splitItems :: Vector a -> [Int] -> Int -> PrettyWrapper
-        splitItems _ [] _ = error "Impossible: never match an empty list."
-        splitItems values [x] s = MkPretty . toList $ V.unsafeSlice s x values
-        splitItems values (d:ds) s = MkPretty $ (\x -> splitItems values ds (s + (product ds) * x)) <$> ([0 .. (d - 1)] :: [Int])
 
 -- | Wait all async operation to finish in MXNet.
 waitAll :: IO ()
@@ -97,18 +66,18 @@ makeNDArray sh ctx ds = do
     return $ NDArray handle
 
 -- | Get the shape of given NDArray.
-shape :: DType a
+ndshape :: DType a
       => NDArray a
       -> IO (Int, [Int])  -- ^ Dimensions and size of every dimensions.
-shape arr = do
+ndshape arr = do
     (_, nlen, sh) <- mxNDArrayGetShape (getHandle arr)
     return (fromIntegral nlen, fromIntegral <$> sh)
 
 -- | Get size of the given ndarray.
-size :: DType a
+ndsize :: DType a
      => NDArray a
      -> IO Int      -- ^ Dimensions and size of every dimensions.
-size arr = (product . snd) <$> shape arr
+ndsize arr = (product . snd) <$> ndshape arr
 
 -- | Get context of the given ndarray.
 context :: DType a => NDArray a -> IO Context
@@ -123,7 +92,7 @@ copy arr = NDArray <$> I._copy (getHandle arr)
 -- | Get data stored in NDArray.
 items :: DType a => NDArray a -> IO (Vector a)
 items arr = do
-    nlen <- (product . snd) <$> shape arr
+    nlen <- ndsize arr
     alloca $ \p -> do
         mxNDArraySyncCopyToCPU (getHandle arr) p (fromIntegral nlen)
         fromList <$> peekArray nlen (castPtr p :: Ptr a)
@@ -190,15 +159,35 @@ full :: DType a
       => [Int]      -- ^ Shape.
       -> a          -- ^ Given value to fill the ndarray.
       -> IO (NDArray a)
-full sh value = makeNDArray sh defaultContext $ V.replicate (product sh) value
+full sh value = makeNDArray sh contextCPU $ V.replicate (product sh) value
 
 -- | Create a new NDArray that copies content from source_array.
 array :: DType a
       => [Int]      -- ^ Shape.
       -> Vector a
       -> IO (NDArray a)
-array sh = makeNDArray sh defaultContext
+array sh = makeNDArray sh contextCPU
 
+-- | Wrapper for pretty print multiple dimensions matrices.
+data PrettyWrapper = forall a. Pretty a => MkPretty { runPretty :: a }
+
+-- | Destruct pretty
+instance Pretty PrettyWrapper where
+    pPrint (MkPretty inner) = pPrint inner
+
+instance (DType a, Pretty a) => Show (NDArray a) where
+    -- TODO display more related information.
+    show array = unsafePerformIO $ do
+        (_, dims) <- ndshape array
+        values <- items array
+        let info = show dims
+            body = prettyShow . splitItems values dims $ 0
+        return ("NDArray " <> info <> "\n" <> body)
+      where
+        splitItems :: Vector a -> [Int] -> Int -> PrettyWrapper
+        splitItems _ [] _ = error "Impossible: never match an empty list."
+        splitItems values [x] s = MkPretty . toList $ V.unsafeSlice s x values
+        splitItems values (d:ds) s = MkPretty $ (\x -> splitItems values ds (s + (product ds) * x)) <$> ([0 .. (d - 1)] :: [Int])
 
 instance DType a => Num (NDArray a) where
     (+) arr1 arr2 = NDArray . unsafePerformIO $ do

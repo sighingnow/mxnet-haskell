@@ -1,7 +1,7 @@
 -----------------------------------------------------------
 -- |
--- module:                      MXNet.Core.Internal.Types.Raw
--- copyright:                   (c) 2016 Tao He
+-- module:                      MXNet.Core.Types.Internal.Raw
+-- copyright:                   (c) 2016-2017 Tao He
 -- license:                     MIT
 -- maintainer:                  sighingnow@gmail.com
 --
@@ -14,7 +14,7 @@
 #endif
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module MXNet.Core.Internal.Types.Raw where
+module MXNet.Core.Types.Internal.Raw where
 
 import Foreign.C.Types
 import Foreign.Ptr

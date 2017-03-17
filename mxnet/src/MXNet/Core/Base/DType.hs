@@ -1,7 +1,7 @@
 -----------------------------------------------------------
 -- |
--- module:                      MXNet.Core.DType
--- copyright:                   (c) 2016 Tao He
+-- module:                      MXNet.Core.Base.DType
+-- copyright:                   (c) 2016-2017 Tao He
 -- license:                     MIT
 -- maintainer:                  sighingnow@gmail.com
 --
@@ -10,7 +10,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE KindSignatures #-}
 
-module MXNet.Core.DType
+module MXNet.Core.Base.DType
     ( DType (..)
     , pattern FLOAT32
     , pattern FLOAT64

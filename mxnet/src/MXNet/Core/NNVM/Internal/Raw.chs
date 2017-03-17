@@ -1,6 +1,6 @@
 -----------------------------------------------------------
 -- |
--- module:                      MXNet.Core.NNVM.Base.Internal.Raw
+-- module:                      MXNet.Core.NNVM.Internal.Raw
 -- copyright:                   (c) 2016-2017 Tao He
 -- license:                     MIT
 -- maintainer:                  sighingnow@gmail.com
@@ -17,7 +17,7 @@
 #endif
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module MXNet.Core.NNVM.Base.Internal.Raw where
+module MXNet.Core.NNVM.Internal.Raw where
 
 import Control.Exception (throwIO)
 import Foreign.C.String
@@ -29,7 +29,7 @@ import Foreign.Storable
 
 import C2HS.C.Extra.Marshal
 
-{#import MXNet.Core.Internal.Types.Raw #}
+{#import MXNet.Core.Types.Internal.Raw #}
 
 #include <nnvm/c_api.h>
 

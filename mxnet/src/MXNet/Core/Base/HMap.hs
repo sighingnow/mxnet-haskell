@@ -1,6 +1,6 @@
 -----------------------------------------------------------
 -- |
--- module:                      MXNet.Core.HMap
+-- module:                      MXNet.Core.Base.HMap
 -- copyright:                   (c) 2016-2017 Tao He
 -- license:                     MIT
 -- maintainer:                  sighingnow@gmail.com
@@ -37,7 +37,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module MXNet.Core.HMap
+module MXNet.Core.Base.HMap
     ( -- * HMap type definition
       HMap
       -- * Type level constraints and operators

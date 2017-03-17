@@ -24,7 +24,7 @@ import Foreign.Storable
 
 import C2HS.C.Extra.Marshal
 
-{#import MXNet.Core.Internal.Types.Raw #}
+{#import MXNet.Core.Types.Internal.Raw #}
 
 #include <mxnet/c_predict_api.h>
 
