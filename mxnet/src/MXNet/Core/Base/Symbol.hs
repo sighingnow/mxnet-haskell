@@ -75,18 +75,6 @@ grad sym args = do
     (_, handle) <- mxSymbolGrad (getHandle sym) nargs args
     return $ Symbol handle
 
--- | List all input arguments.
-listInputs :: DType a => Symbol a -> IO [String]
-listInputs sym = snd <$> mxSymbolListArguments (getHandle sym)
-
--- | List all output results.
-listOutputs :: DType a => Symbol a -> IO [String]
-listOutputs sym = snd <$> mxSymbolListOutputs (getHandle sym)
-
--- | List all auxiliary states.
-listAuxiliaries :: DType a => Symbol a -> IO [String]
-listAuxiliaries sym = snd <$> mxSymbolListAuxiliaryStates (getHandle sym)
-
 -- | Bind with explicit argument mapping (name -- value mapping).
 bind :: DType a
      => Symbol a
@@ -140,6 +128,18 @@ bind' sym Context{..} args = do
     genNDArrayMapping args names =
         assert (length args == length names) $
             HM.fromList (zip names args)
+
+-- | List all input arguments.
+listInputs :: DType a => Symbol a -> IO [String]
+listInputs sym = snd <$> mxSymbolListArguments (getHandle sym)
+
+-- | List all output results.
+listOutputs :: DType a => Symbol a -> IO [String]
+listOutputs sym = snd <$> mxSymbolListOutputs (getHandle sym)
+
+-- | List all auxiliary states.
+listAuxiliaries :: DType a => Symbol a -> IO [String]
+listAuxiliaries sym = snd <$> mxSymbolListAuxiliaryStates (getHandle sym)
 
 instance DType a => Num (Symbol a) where
     (+) sym1 sym2 = Symbol . unsafePerformIO $ do
@@ -219,6 +219,21 @@ instance DType a => Floating (Symbol a) where
         I.tanh ("tanh(" <> name1 <> ")") handle1
 
 instance Tensor Symbol where
+    dot sym1 sym2 = Symbol . unsafePerformIO $ do
+        let handle1 = getHandle sym1
+            handle2 = getHandle sym2
+        name1 <- getName sym1
+        name2 <- getName sym2
+        I.dot ("dot(" <> name1 <> "," <> name2 <> ")") handle1 handle2 nil
+    reshape sym sh = Symbol . unsafePerformIO $ do
+        let handle = getHandle sym
+            sh' = "(" <> (init . tail . show $ sh) <> ")"
+        name1 <- getName sym
+        I.reshape ("reshape(" <> name1 <> "," <> sh' <> ")") handle (add @"shape" sh' nil)
+    transpose sym = Symbol . unsafePerformIO $ do
+        let handle = getHandle sym
+        name1 <- getName sym
+        I.transpose ("transpose(" <> name1 <> ")") handle nil
     (.+) sym value = Symbol . unsafePerformIO $ do
         let handle = getHandle sym
         name1 <- getName sym

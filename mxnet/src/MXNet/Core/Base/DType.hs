@@ -64,6 +64,12 @@ instance DType Int32 where
 
 -- | Tensor operations.
 class Tensor (tensor :: * -> *) where
+    -- | Dot product.
+    dot :: DType a => tensor a -> tensor a -> tensor a
+    -- | Reshape a tensor value.
+    reshape :: DType a => tensor a -> [Int] -> tensor a
+    -- | Transpose a tensor value.
+    transpose :: DType a => tensor a -> tensor a
     -- | Ordinary arithmetic operators with scalar value.
     (.+), (.-), (.*), (./), (.^) :: DType a => tensor a -> a -> tensor a
     -- | Flip version of ordinary arithmetic operators with scalar value.

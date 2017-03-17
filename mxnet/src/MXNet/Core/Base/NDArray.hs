@@ -118,16 +118,6 @@ at arr idx = NDArray . unsafePerformIO $ do
     (_, handle') <- mxNDArrayAt handle (fromIntegral idx)
     return handle'
 
--- | Return a reshaped ndarray that __shares memory__ with current one.
-reshape :: DType a
-        => NDArray a
-        -> [Int]        -- ^ Size of every dimension of new shape.
-        -> NDArray a
-reshape arr sh = NDArray . unsafePerformIO $ do
-    let handle = getHandle arr
-    (_, handle') <- mxNDArrayReshape handle (length sh) sh
-    return handle'
-
 -- | Block until all pending writes operations on current ndarray are finished.
 waitToRead :: DType a => NDArray a -> IO ()
 waitToRead arr = void $ mxNDArrayWaitToRead (getHandle arr)
@@ -248,6 +238,17 @@ instance DType a => Floating (NDArray a) where
         I.tanh handle1
 
 instance Tensor NDArray where
+    dot arr1 arr2 = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle arr1
+            handle2 = getHandle arr2
+        I.dot handle1 handle2 nil
+    reshape arr sh = NDArray . unsafePerformIO $ do
+        let handle = getHandle arr
+        (_, handle') <- mxNDArrayReshape handle (length sh) sh
+        return handle'
+    transpose arr = NDArray . unsafePerformIO $ do
+        let handle = getHandle arr
+        I.transpose handle nil
     (.+) arr value = NDArray . unsafePerformIO $ do
         let handle = getHandle arr
         I._plus_scalar handle (realToFrac value)

@@ -22,7 +22,6 @@ module MXNet.Core.Base
     , context
     , slice
     , at
-    , reshape
     , waitToRead
     , onehotEncode
     , zeros
@@ -37,6 +36,8 @@ module MXNet.Core.Base
     , setAttr
     , infershape
     , grad
+    , bind
+    , bind'
     , listInputs
     , listOutputs
     , listAuxiliaries
