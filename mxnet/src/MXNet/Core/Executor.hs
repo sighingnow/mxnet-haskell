@@ -13,7 +13,8 @@ module MXNet.Core.Executor where
 
 import           Control.Monad
 import           MXNet.Core.Base
-import           MXNet.Core.NDArray (NDArray(NDArray), DType)
+import           MXNet.Core.DType
+import           MXNet.Core.NDArray (NDArray(NDArray))
 
 -- | Type alias for variable.
 newtype Executor a = Executor { getHandle :: ExecutorHandle }
