@@ -82,7 +82,7 @@ makeNDArrayFunc mutable _name desc argv argtype = do
                         then [VarP (mkName "outputs")]
                         else []
 
-    let ndargs = foldl (\args (v, t) -> case makeHsType t of
+    let ndargs = foldr (\(v, t) args-> case makeHsType t of
                                              ConT _ -> UInfixE (VarE . mkName . ("arg'" <>) $ v) (ConE . mkName $ ":") args
                                              AppT ListT _ -> UInfixE (VarE . mkName . ("arg'" <>) $ v) (VarE . mkName $ "++") args
                                              _ -> error "Impossible: not a valid haskell type representation.")
@@ -261,7 +261,7 @@ makeSymbolFunc _name desc argv argtype = do
                           then [VarP . mkName $ "varargs"]
                           else []
 
-    let ndargs = foldl (\args (v, t) -> case makeHsType t of
+    let ndargs = foldr (\(v, t) args -> case makeHsType t of
                                              ConT _ -> UInfixE (VarE . mkName . ("arg'" <>) $ v) (ConE . mkName $ ":") args
                                              AppT ListT _ -> UInfixE (VarE . mkName . ("arg'" <>) $ v) (VarE . mkName $ "++") args
                                              _ -> error "Impossible: not a valid haskell type representation.")
