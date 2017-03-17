@@ -27,11 +27,11 @@ Library
         MXNet.Core.Base.Internal.TH.NDArray
         MXNet.Core.Base.Internal.TH.Symbol
     other-modules:
-        MXNet.Core.Base.Internal.TH
-        MXNet.Core.Base.Internal.Raw
         MXNet.Core.Types.Internal.Raw
+        MXNet.Core.Base.Internal.Raw
         MXNet.Core.Predict.Internal.Raw
         MXNet.Core.NNVM.Internal.Raw
+        MXNet.Core.Base.Internal.TH
     hs-source-dirs:         src
     build-tools:            c2hs
     ghc-options:            -Wall -lmxnet
