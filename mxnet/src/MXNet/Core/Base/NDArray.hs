@@ -164,7 +164,7 @@ array :: DType a
       -> IO (NDArray a)
 array sh = makeNDArray sh contextCPU
 
-instance (DType a, Floating a) => Eq (NDArray a) where
+instance {-# OVERLAPPABLE #-} (DType a, Floating a) => Eq (NDArray a) where
     (==) arr1 arr2 = unsafePerformIO $ do
         (_, sh1) <- ndshape arr1
         (_, sh2) <- ndshape arr2
