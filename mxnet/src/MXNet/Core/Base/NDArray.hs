@@ -7,20 +7,22 @@
 --
 -- NDArray module, provide an imperative-style programming interface.
 --
+{-# OPTIONS_GHC -Wno-missing-methods #-}
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module MXNet.Core.Base.NDArray where
 
 import           Control.Monad
-import           Data.Int
 import           Data.Monoid
 import           Data.Vector.Storable (Vector)
 import qualified Data.Vector.Storable as V
 import           Foreign.Marshal.Alloc (alloca)
 import           Foreign.Marshal.Array (peekArray)
 import           Foreign.Ptr
-import           Foreign.Storable (Storable)
 import           GHC.Exts (IsList(..))
 import           Text.PrettyPrint.Annotated.HughesPJClass (Pretty(..), prettyShow)
 import           System.IO.Unsafe (unsafePerformIO)
@@ -62,7 +64,7 @@ makeNDArray sh ctx ds = do
     (_, handle) <- mxNDArrayCreate sh' nlen (deviceType ctx) (deviceId ctx) 0
     V.unsafeWith ds $ \p -> do
         let len = fromIntegral (V.length ds)
-        mxNDArraySyncCopyFromCPU handle (castPtr p) len
+        void $ mxNDArraySyncCopyFromCPU handle (castPtr p) len
     return $ NDArray handle
 
 -- | Get the shape of given NDArray.
@@ -94,7 +96,7 @@ items :: DType a => NDArray a -> IO (Vector a)
 items arr = do
     nlen <- ndsize arr
     alloca $ \p -> do
-        mxNDArraySyncCopyToCPU (getHandle arr) p (fromIntegral nlen)
+        _ <- mxNDArraySyncCopyToCPU (getHandle arr) p (fromIntegral nlen)
         fromList <$> peekArray nlen (castPtr p :: Ptr a)
 
 -- | Return a sliced ndarray that __shares memory__ with current one.
@@ -158,6 +160,13 @@ array :: DType a
       -> IO (NDArray a)
 array sh = makeNDArray sh contextCPU
 
+instance DType a => Eq (NDArray a) where
+    (==) arr1 arr2 = unsafePerformIO $ do
+        let handle1 = getHandle arr1
+            handle2 = getHandle arr2
+        let cmp = V.all (== fromIntegral (1 :: Int)) :: Vector a -> Bool
+        (cmp <$>) . items . NDArray =<< I.broadcast_equal handle1 handle2
+
 -- | Wrapper for pretty print multiple dimensions matrices.
 data PrettyWrapper = forall a. Pretty a => MkPretty { runPretty :: a }
 
@@ -167,9 +176,9 @@ instance Pretty PrettyWrapper where
 
 instance (DType a, Pretty a) => Show (NDArray a) where
     -- TODO display more related information.
-    show array = unsafePerformIO $ do
-        (_, dims) <- ndshape array
-        values <- items array
+    show arr = unsafePerformIO $ do
+        (_, dims) <- ndshape arr
+        values <- items arr
         let info = show dims
             body = prettyShow . splitItems values dims $ 0
         return ("NDArray " <> info <> "\n" <> body)
@@ -198,15 +207,15 @@ instance DType a => Num (NDArray a) where
     negate arr1 = NDArray . unsafePerformIO $ do
         let handle1 = getHandle arr1
         I.negative handle1
-    signum = error "Unsupported operation: signum(NDArray)"
-    fromInteger = error "Unsupported operation: fromInteger(NDArray)"
+    signum = error "Unsupported operator: signum(NDArray)"
+    fromInteger = error "Unsupported operator: fromInteger(NDArray)"
 
 instance DType a => Fractional (NDArray a) where
     (/) arr1 arr2 = NDArray . unsafePerformIO $ do
         let handle1 = getHandle arr1
             handle2 = getHandle arr2
         I.broadcast_div handle1 handle2
-    fromRational = error "Unsupported operation: fromRational(NDArray)"
+    fromRational = error "Unsupported operator: fromRational(NDArray)"
 
 instance DType a => Floating (NDArray a) where
     exp arr1 = NDArray . unsafePerformIO $ do
@@ -299,24 +308,24 @@ instance Tensor NDArray where
         let handle = getHandle arr
         I._power_scalar' handle (realToFrac value) [handle]
 
-    maximum arr1 arr2 = NDArray . unsafePerformIO $ do
+    _Maximum arr1 arr2 = NDArray . unsafePerformIO $ do
         let handle1 = getHandle arr1
             handle2 = getHandle arr2
         I.broadcast_maximum handle1 handle2
-    {-# INLINE maximum #-}
-    maximum' arr scalar = NDArray . unsafePerformIO $ do
+    {-# INLINE _Maximum #-}
+    _Maximum' arr scalar = NDArray . unsafePerformIO $ do
         let handle = getHandle arr
         I._maximum_scalar handle (realToFrac scalar)
-    {-# INLINE maximum' #-}
-    minimum arr1 arr2 = NDArray . unsafePerformIO $ do
+    {-# INLINE _Maximum' #-}
+    _Minimum arr1 arr2 = NDArray . unsafePerformIO $ do
         let handle1 = getHandle arr1
             handle2 = getHandle arr2
         I.broadcast_minimum handle1 handle2
-    {-# INLINE minimum #-}
-    minimum' arr scalar = NDArray . unsafePerformIO $ do
+    {-# INLINE _Minimum #-}
+    _Minimum' arr scalar = NDArray . unsafePerformIO $ do
         let handle = getHandle arr
         I._minimum_scalar handle (realToFrac scalar)
-    {-# INLINE minimum' #-}
+    {-# INLINE _Minimum' #-}
     equal arr1 arr2 = NDArray . unsafePerformIO $ do
         let handle1 = getHandle arr1
             handle2 = getHandle arr2
@@ -373,28 +382,79 @@ instance Tensor NDArray where
     {-# INLINE lesserEqual' #-}
 
 instance Neural NDArray where
-    fullyconnected input weight bias n = NDArray . unsafePerformIO $ do
+    fullyConnected input weight bias n = NDArray . unsafePerformIO $ do
         let handle1 = getHandle input
             handle2 = getHandle weight
             handle3 = getHandle bias
         I.fullyconnected handle1 handle2 handle3 n nil
+    correlation input1 input2 = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle input1
+            handle2 = getHandle input2
+        I.correlation handle1 handle2 nil
+    activation input act = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle input
+        I.activation handle1 act
+    leakyReLU input act = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle input
+        I.leakyrelu handle1 (add @"act_type" act nil)
+    softmaxActivation input = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle input
+        I.softmaxactivation handle1 nil
+    dropout input p = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle input
+        I.dropout handle1 (add @"p" p nil)
+    batchNorm input gamma beta = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle input
+            handle2 = getHandle gamma
+            handle3 = getHandle beta
+        I.batchnorm handle1 handle2 handle3 nil
+    instanceNorm input gamma beta eps = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle input
+            handle2 = getHandle gamma
+            handle3 = getHandle beta
+        I.instancenorm handle1 handle2 handle3 (add @"eps" eps nil)
+    l2Normalization input eps mode = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle input
+        I.l2normalization handle1 (add @"eps" eps $ add @"mode" mode nil)
     convolution input weight bias kernel n = NDArray . unsafePerformIO $ do
         let handle1 = getHandle input
             handle2 = getHandle weight
             handle3 = getHandle bias
         I.convolution handle1 handle2 handle3 kernel n nil
-    activation input act = NDArray . unsafePerformIO $ do
+    lrn input alpha beta knorm nsize = NDArray . unsafePerformIO $ do
         let handle1 = getHandle input
-        I.activation handle1 act
-    batchnorm input weight bias = NDArray . unsafePerformIO $ do
+        I.lrn handle1 nsize (add @"alpha" alpha $ add @"beta" beta $ add @"knorm" knorm nil)
+    deconvolution input weight bias kernel nfilter = NDArray . unsafePerformIO $ do
         let handle1 = getHandle input
             handle2 = getHandle weight
             handle3 = getHandle bias
-        I.batchnorm handle1 handle2 handle3 nil
+        I.deconvolution handle1 handle2 handle3 kernel nfilter nil
     pooling input kernel pooltype = NDArray . unsafePerformIO $ do
         let handle1 = getHandle input
         I.pooling handle1 kernel pooltype nil
-    softmaxoutput input label = NDArray . unsafePerformIO $ do
+    -- roiPooling
+    -- rnn
+    -- embedding
+    -- bilinearSampler
+    -- gridGenerator
+    -- upSampling
+    -- spatialTransformer
+    -- linearRegressionOutput
+    -- logisticRegressionOutput
+    softmaxOutput input label = NDArray . unsafePerformIO $ do
         let handle1 = getHandle input
             handle2 = getHandle label
         I.softmaxoutput handle1 handle2 nil
+    -- maeRegressionOutput
+    -- svmOutput
+    -- softmaxCrossEntropy
+    -- smoothL1
+    -- identityAttachKLSparsereg
+    makeLoss input grad_scale valid_thresh normalization = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle input
+        I.makeloss handle1 (add @"grad_scale" grad_scale $ add @"valid_thresh" valid_thresh $ add @"normalization" normalization nil)
+    blockGrad input = NDArray . unsafePerformIO $ do
+        let handle1 = getHandle input
+        I.blockgrad handle1
+    custom op = NDArray . unsafePerformIO $ do
+        I.custom op

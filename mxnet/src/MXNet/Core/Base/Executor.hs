@@ -38,9 +38,9 @@ backward :: DType a
          -> IO ()
 backward exec = void $ mxExecutorBackward (getHandle exec) 0 []
 
-getOutput :: DType a
+getOutputs :: DType a
           => Executor a
           -> IO [NDArray a]
-getOutput exec = do
+getOutputs exec = do
     (_, outs) <- mxExecutorOutputs (getHandle exec)
     return $ NDArray <$> outs

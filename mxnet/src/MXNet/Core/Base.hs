@@ -20,8 +20,9 @@ module MXNet.Core.Base
     , ndshape
     , ndsize
     , context
-    , slice
     , at
+    , items
+    , slice
     , waitToRead
     , onehotEncode
     , zeros
@@ -46,7 +47,7 @@ module MXNet.Core.Base
     , makeExecutor
     , forward
     , backward
-    , getOutput
+    , getOutputs
       -- * DType
     , module MXNet.Core.Base.DType
       -- * Heterogeneous Dictionary.

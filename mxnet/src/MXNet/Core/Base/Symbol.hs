@@ -7,14 +7,19 @@
 --
 -- Symbol module.
 --
+{-# OPTIONS_GHC -Wno-missing-methods #-}
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeApplications #-}
 
 module MXNet.Core.Base.Symbol where
 
-import           Control.Exception
+import           Control.Exception (assert, throw)
 import           Control.Monad
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
+import           Data.IORef
 import           Data.Monoid
 import           Foreign.Ptr (nullPtr)
 import           System.IO.Unsafe
@@ -27,7 +32,6 @@ import           MXNet.Core.Base.HMap
 import           MXNet.Core.Base.Executor hiding (getHandle)
 import           MXNet.Core.Base.NDArray hiding (getHandle)
 import qualified MXNet.Core.Base.NDArray as NDArray (getHandle)
-import           MXNet.Core.NNVM.Internal
 
 -- | Type alias for variable.
 newtype Symbol a = Symbol { getHandle :: SymbolHandle }
@@ -82,7 +86,7 @@ bind :: DType a
      -> HashMap String (NDArray a)
      -> IO (Executor a)
 bind sym Context{..} args = do
-    inputs <- genNDArrayMapping args <$> listInputs sym
+    inputs <- genNDArrayMapping <$> listInputs sym
     -- req_map = {'null': 0, 'write': 1, 'add': 3}
     let req_types = replicate (HM.size inputs) 1        -- use default value.
     (_, exec) <- mxExecutorBind (getHandle sym)
@@ -97,7 +101,7 @@ bind sym Context{..} args = do
     return $ Executor exec
   where
     -- | Get ndarray lists handles from input arguments.
-    genNDArrayMapping args arg_names = HM.fromList (genfn <$> arg_names)
+    genNDArrayMapping arg_names = HM.fromList (genfn <$> arg_names)
       where
         genfn nm = case HM.lookup nm args of
                         Just v -> (nm, v)
@@ -110,7 +114,7 @@ bind' :: DType a
       -> [NDArray a]
       -> IO (Executor a)
 bind' sym Context{..} args = do
-    inputs <- genNDArrayMapping args <$> listInputs sym
+    inputs <- genNDArrayMapping <$> listInputs sym
     -- req_map = {'null': 0, 'write': 1, 'add': 3}
     let req_types = replicate (HM.size inputs) 1        -- use default value.
     (_, exec) <- mxExecutorBind (getHandle sym)
@@ -125,7 +129,7 @@ bind' sym Context{..} args = do
     return $ Executor exec
   where
     -- | Get ndarray lists handles from input arguments without explicit argument names.
-    genNDArrayMapping args names =
+    genNDArrayMapping names =
         assert (length args == length names) $
             HM.fromList (zip names args)
 
@@ -168,8 +172,8 @@ instance DType a => Num (Symbol a) where
         let handle1 = getHandle sym1
         name1 <- getName sym1
         I.negative ("(-" <> name1 <> ")") handle1
-    signum = error "Unsupported operation: signum(Symbol)"
-    fromInteger = error "Unsupported operation: fromInteger(Symbol)"
+    signum = error "Unsupported operator: signum(Symbol)"
+    fromInteger = error "Unsupported operator: fromInteger(Symbol)"
 
 instance DType a => Fractional (Symbol a) where
     (/) sym1 sym2 = Symbol . unsafePerformIO $ do
@@ -178,7 +182,7 @@ instance DType a => Fractional (Symbol a) where
         name1 <- getName sym1
         name2 <- getName sym2
         I._Div (name1 <> "/" <> name2) handle1 handle2
-    fromRational = error "Unsupported operation: fromRational(Symbol)"
+    fromRational = error "Unsupported operator: fromRational(Symbol)"
 
 instance DType a => Floating (Symbol a) where
     exp sym1 = Symbol . unsafePerformIO $ do
@@ -275,30 +279,30 @@ instance Tensor Symbol where
         I._RPowerScalar (show value <> "^" <> name1) handle (realToFrac value)
     {-# INLINE (..^) #-}
 
-    maximum sym1 sym2 = Symbol . unsafePerformIO $ do
+    _Maximum sym1 sym2 = Symbol . unsafePerformIO $ do
         let handle1 = getHandle sym1
             handle2 = getHandle sym2
         name1 <- getName sym1
         name2 <- getName sym2
-        I._Maximum ("maximum(" <> name1 <> "," <> name2 <> ")") handle1 handle2
-    {-# INLINE maximum #-}
-    maximum' sym scalar = Symbol . unsafePerformIO $ do
+        I._Maximum ("_Maximum(" <> name1 <> "," <> name2 <> ")") handle1 handle2
+    {-# INLINE _Maximum #-}
+    _Maximum' sym scalar = Symbol . unsafePerformIO $ do
         let handle = getHandle sym
         name1 <- getName sym
-        I._MaximumScalar ("maximum'(" <> name1 <> "," <> show scalar <> ")") handle (realToFrac scalar)
-    {-# INLINE maximum' #-}
-    minimum sym1 sym2 = Symbol . unsafePerformIO $ do
+        I._MaximumScalar ("_Maximum'(" <> name1 <> "," <> show scalar <> ")") handle (realToFrac scalar)
+    {-# INLINE _Maximum' #-}
+    _Minimum sym1 sym2 = Symbol . unsafePerformIO $ do
         let handle1 = getHandle sym1
             handle2 = getHandle sym2
         name1 <- getName sym1
         name2 <- getName sym2
-        I._Minimum ("minimum(" <> name1 <> "," <> name2 <> ")") handle1 handle2
-    {-# INLINE minimum #-}
-    minimum' sym scalar = Symbol . unsafePerformIO $ do
+        I._Minimum ("_Minimum(" <> name1 <> "," <> name2 <> ")") handle1 handle2
+    {-# INLINE _Minimum #-}
+    _Minimum' sym scalar = Symbol . unsafePerformIO $ do
         let handle = getHandle sym
         name1 <- getName sym
-        I._MinimumScalar ("minimum'(" <> name1 <> "," <> show scalar <> ")") handle (realToFrac scalar)
-    {-# INLINE minimum' #-}
+        I._MinimumScalar ("_Minimum'(" <> name1 <> "," <> show scalar <> ")") handle (realToFrac scalar)
+    {-# INLINE _Minimum' #-}
     equal sym1 sym2 = Symbol . unsafePerformIO $ do
         let handle1 = getHandle sym1
             handle2 = getHandle sym2
@@ -372,29 +376,91 @@ instance Tensor Symbol where
         I._lesser_equal_scalar (name1 <> "<=" <> show scalar) handle (realToFrac scalar)
     {-# INLINE lesserEqual' #-}
 
+-- | Provide a globally unique serial ID for each symbol.
+symid :: IORef Int
+symid = unsafePerformIO (newIORef 0)
+
+-- | Generate a globally unique name for each symbol, thread safely.
+naming :: String -> IO String
+naming prefix = ((prefix <>) . show) <$> atomicModifyIORef symid (\a -> (a+1, a))
+
 instance Neural Symbol where
-    fullyconnected input weight bias n = Symbol . unsafePerformIO $ do
+    fullyConnected input weight bias n = Symbol . unsafePerformIO $ do
         let handle1 = getHandle input
             handle2 = getHandle weight
             handle3 = getHandle bias
-        I.fullyconnected "FullyConnected" handle1 handle2 handle3 n nil
+        name <- naming "FullyConnected"
+        I.fullyconnected name handle1 handle2 handle3 n nil
+    correlation input1 input2 = Symbol . unsafePerformIO $ do
+        let handle1 = getHandle input1
+            handle2 = getHandle input2
+        name <- naming "Correlation"
+        I.correlation name handle1 handle2 nil
+    activation input act = Symbol . unsafePerformIO $ do
+        let handle1 = getHandle input
+        name <- naming "Activation"
+        I.activation name handle1 act
+    leakyReLU input act = Symbol . unsafePerformIO $ do
+        let handle1 = getHandle input
+        name <- naming "LeakyReLU"
+        I.leakyrelu name handle1 (add @"act_type" act nil)
+    softmaxActivation input = Symbol . unsafePerformIO $ do
+        let handle1 = getHandle input
+        name <- naming "SoftmaxActivation"
+        I.softmaxactivation name handle1 nil
+    dropout input p = Symbol . unsafePerformIO $ do
+        let handle1 = getHandle input
+        name <- naming "Dropout"
+        I.dropout name handle1 (add @"p" p nil)
+    batchNorm input weight bias = Symbol . unsafePerformIO $ do
+        let handle1 = getHandle input
+            handle2 = getHandle weight
+            handle3 = getHandle bias
+        name <- naming "BatchNorm"
+        I.batchnorm name handle1 handle2 handle3 nil
+    instanceNorm input gamma beta eps = Symbol . unsafePerformIO $ do
+        let handle1 = getHandle input
+            handle2 = getHandle gamma
+            handle3 = getHandle beta
+        name <- naming "InstnaceNorm"
+        I.instancenorm name handle1 handle2 handle3 (add @"eps" eps nil)
+    l2Normalization input eps mode = Symbol . unsafePerformIO $ do
+        let handle1 = getHandle input
+        name <- naming "L2Normalization"
+        I.l2normalization name handle1 (add @"eps" eps $ add @"mode" mode nil)
     convolution input weight bias kernel n = Symbol . unsafePerformIO $ do
         let handle1 = getHandle input
             handle2 = getHandle weight
             handle3 = getHandle bias
-        I.convolution "Convolution" handle1 handle2 handle3 kernel n nil
-    activation input act = Symbol . unsafePerformIO $ do
+        name <- naming "Convolution"
+        I.convolution name handle1 handle2 handle3 kernel n nil
+    lrn input alpha beta knorm nsize = Symbol . unsafePerformIO $ do
         let handle1 = getHandle input
-        I.activation "Activation" handle1 act
-    batchnorm input weight bias = Symbol . unsafePerformIO $ do
+        name <- naming "LRN"
+        I.lrn name handle1 nsize (add @"alpha" alpha $ add @"beta" beta $ add @"knorm" knorm nil)
+    deconvolution input weight bias kernel nfilter = Symbol . unsafePerformIO $ do
         let handle1 = getHandle input
             handle2 = getHandle weight
             handle3 = getHandle bias
-        I.batchnorm "BatchNorm" handle1 handle2 handle3 nil
+        name <- naming "Deconvolution"
+        I.deconvolution name handle1 handle2 handle3 kernel nfilter nil
     pooling input kernel pooltype = Symbol . unsafePerformIO $ do
         let handle1 = getHandle input
-        I.pooling "Pooling" handle1 kernel pooltype nil
-    softmaxoutput input label = Symbol . unsafePerformIO $ do
+        name <- naming "Pooling"
+        I.pooling name handle1 kernel pooltype nil
+    softmaxOutput input label = Symbol . unsafePerformIO $ do
         let handle1 = getHandle input
             handle2 = getHandle label
-        I.softmaxoutput "SoftmaxOutput" handle1 handle2 nil
+        name <- naming "SoftmaxOutput"
+        I.softmaxoutput name handle1 handle2 nil
+    makeLoss input grad_scale valid_thresh normalization = Symbol . unsafePerformIO $ do
+        let handle1 = getHandle input
+        name <- naming "MakeLoss"
+        I.makeloss name handle1 (add @"grad_scale" grad_scale $ add @"valid_thresh" valid_thresh $ add @"normalization" normalization nil)
+    blockGrad input = Symbol . unsafePerformIO $ do
+        let handle1 = getHandle input
+        name <- naming "BlockGrad"
+        I.blockgrad name handle1
+    custom op = Symbol . unsafePerformIO $ do
+        name <- naming "Custom"
+        I.custom name op
