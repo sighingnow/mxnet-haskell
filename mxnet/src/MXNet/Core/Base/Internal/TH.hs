@@ -92,18 +92,7 @@ makeNDArrayFunc mutable _name desc argv argtype = do
         dictargs = UInfixE (VarE (mkName "varArgK")) (VarE (mkName "zip")) (VarE (mkName "varArgV"))
 
     let func = NormalB . DoE $
-            [ LetS [ ValD (VarP (mkName "defaultVarArgs"))
-                          (NormalB $
-                              foldr (\(name, t, value) acc -> AppE (AppE (AppE (VarE (mkName "add'"))
-                                                                               (SigE (ConE (mkName "Proxy"))
-                                                                                     (AppT (ConT (mkName "Proxy")) (LitT (StrTyLit name)))))
-                                                                         (SigE (makeImplicitE t value) (makeHsType t)))
-                                                                   acc)
-                                    (VarE (mkName "nil"))
-                                    implicitArg)
-                          []
-                   ]
-            , LetS [ ValD (VarP (mkName "allArgs"))
+            [ LetS [ ValD (VarP (mkName "allArgs"))
                           (NormalB $
                               foldr (\(name, t) acc -> AppE (AppE (AppE (VarE (mkName "add'"))
                                                                         (SigE (ConE (mkName "Proxy"))
@@ -117,11 +106,8 @@ makeNDArrayFunc mutable _name desc argv argtype = do
                    ]
             , LetS [ ValD (VarP (mkName "args"))
                           (NormalB $
-                              AppE (AppE (VarE (mkName "mergeArg"))
-                                         (AppE (VarE (mkName "dump"))
-                                               (VarE (mkName "allArgs"))))
-                                   (AppE (VarE (mkName "dump"))
-                                         (VarE (mkName "defaultVarArgs")))
+                              AppE (VarE (mkName "dump"))
+                                   (VarE (mkName "allArgs"))
                           )
                           []
                    , ValD (TupP [VarP (mkName "varArgK"), VarP (mkName "varArgV")])
@@ -269,18 +255,7 @@ makeSymbolFunc _name desc argv argtype = do
                         ndarrayArg
 
     let func = NormalB . DoE $
-            [ LetS [ ValD (VarP (mkName "defaultVarArgs"))
-                          (NormalB $
-                              foldr (\(name, t, value) acc -> AppE (AppE (AppE (VarE (mkName "add'"))
-                                                                               (SigE (ConE (mkName "Proxy"))
-                                                                                     (AppT (ConT (mkName "Proxy")) (LitT (StrTyLit name)))))
-                                                                         (SigE (makeImplicitE t value) (makeHsType t)))
-                                                                   acc)
-                                    (VarE (mkName "nil"))
-                                    implicitArg)
-                          []
-                   ]
-            , LetS [ ValD (VarP (mkName "allArgs"))
+            [ LetS [ ValD (VarP (mkName "allArgs"))
                           (NormalB $
                               foldr (\(name, t) acc -> AppE (AppE (AppE (VarE (mkName "add'"))
                                                                         (SigE (ConE (mkName "Proxy"))
@@ -294,11 +269,8 @@ makeSymbolFunc _name desc argv argtype = do
                    ]
             , LetS [ ValD (VarP (mkName "args"))
                           (NormalB $
-                              AppE (AppE (VarE (mkName "mergeArg"))
-                                         (AppE (VarE (mkName "dump"))
-                                               (VarE (mkName "allArgs"))))
-                                   (AppE (VarE (mkName "dump"))
-                                         (VarE (mkName "defaultVarArgs")))
+                              AppE (VarE (mkName "dump"))
+                                   (VarE (mkName "allArgs"))
                           )
                           []
                    , ValD (TupP [VarP (mkName "varArgK"), VarP (mkName "varArgV")])
@@ -440,22 +412,3 @@ getImplicitArg argv argtype = [t | Just t <- resolve <$> zip argv argtype]
                                 else Nothing
 
         getDefault = stripPrefix "default=" . head . filter (isPrefixOf "default=")
-
-
--- | Make expression for implicit argument using given type and default value.
-makeImplicitE :: String -- ^ Type.
-              -> String -- ^ Default value.
-              -> Exp
-makeImplicitE t value =
-    case t of
-        "boolean" -> ConE (mkName value)
-        "float" -> LitE (RationalL (toRational (read value :: Float)))
-        "double" -> LitE (RationalL (toRational (read value :: Double)))
-        "real_t" -> LitE (RationalL (toRational (read value :: Float)))
-        "int (non-negative)" -> LitE (IntegerL (read value :: Integer))
-        'i':'n':'t':_ -> LitE (IntegerL (read (tail $ init value) :: Integer))
-        "long (non-negative)" -> LitE (IntegerL (read value :: Integer))
-        'l':'o':'n':'g':_ -> LitE (IntegerL (read (tail $ init value) :: Integer))
-        '{':_ -> LitE (StringL (tail $ init value))
-        "Shape(tuple)" -> LitE (StringL value)
-        s -> VarE (mkName ("unknown implicit argument type: " <> s <> " with value: " <> value))

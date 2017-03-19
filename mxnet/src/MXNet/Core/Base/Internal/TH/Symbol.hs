@@ -22,7 +22,6 @@
 
 module MXNet.Core.Base.Internal.TH.Symbol where
 
-import Data.HashMap.Strict (union, fromList, toList)
 import Data.Proxy
 
 import MXNet.Core.Base.HMap
@@ -31,10 +30,6 @@ import MXNet.Core.Base.Internal.TH (registerSymbolOps)
 import MXNet.Core.NNVM.Internal (nnGetOpHandle, nnSymbolCompose)
 import Prelude hiding (sin, sinh, cos, cosh, tan, tanh, min, max, round, floor,
                        abs, sum, sqrt, log, exp, flip, concat)
-
--- | Merge two argument dictionaries, if the key exists in both two dictionaries, use the first one.
-mergeArg :: [(String, String)] -> [(String, String)] -> [(String, String)]
-mergeArg as bs = toList $ fromList as `union` fromList bs
 
 -- | Register symbol operators.
 $(registerSymbolOps)

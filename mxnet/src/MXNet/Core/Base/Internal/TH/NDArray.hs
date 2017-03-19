@@ -22,7 +22,6 @@
 
 module MXNet.Core.Base.Internal.TH.NDArray where
 
-import Data.HashMap.Strict (union, fromList, toList)
 import Data.Proxy
 
 import MXNet.Core.Base.HMap
@@ -55,10 +54,6 @@ instance NDArrayOpResult [NDArrayHandle] where
     {-# INLINE toResult #-}
     fromResult = id
     {-# INLINE fromResult #-}
-
--- | Merge two argument dictionaries, if the key exists in both two dictionaries, use the first one.
-mergeArg :: [(String, String)] -> [(String, String)] -> [(String, String)]
-mergeArg as bs = toList $ fromList as `union` fromList bs
 
 -- | Register immutable version of ndarray operators.
 $(registerNDArrayOps False)
