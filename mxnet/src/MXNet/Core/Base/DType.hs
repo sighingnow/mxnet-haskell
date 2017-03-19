@@ -139,8 +139,6 @@ class Tensor tensor => Neural tensor where
     batchNorm
         :: DType a
         => tensor a     -- ^ Input data to batch normalization.
-        -> tensor a     -- ^ Gamma array.
-        -> tensor a     -- ^ Beta array.
         -> tensor a
     -- | An operator taking in a n-dimensional input tensor (n > 2), and normalizing the input by subtracting the mean
     -- and variance calculated over the spatial dimensions.

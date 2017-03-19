@@ -403,11 +403,9 @@ instance Neural NDArray where
     dropout input p = NDArray . unsafePerformIO $ do
         let handle1 = getHandle input
         I.dropout handle1 (add @"p" p nil)
-    batchNorm input gamma beta = NDArray . unsafePerformIO $ do
+    batchNorm input = NDArray . unsafePerformIO $ do
         let handle1 = getHandle input
-            handle2 = getHandle gamma
-            handle3 = getHandle beta
-        I.batchnorm handle1 handle2 handle3 nil
+        I.batchnorm handle1 nil
     instanceNorm input gamma beta eps = NDArray . unsafePerformIO $ do
         let handle1 = getHandle input
             handle2 = getHandle gamma

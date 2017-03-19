@@ -412,12 +412,10 @@ instance Neural Symbol where
         let handle1 = getHandle input
         name <- naming "Dropout"
         I.dropout name handle1 (add @"p" p nil)
-    batchNorm input weight bias = Symbol . unsafePerformIO $ do
+    batchNorm input = Symbol . unsafePerformIO $ do
         let handle1 = getHandle input
-            handle2 = getHandle weight
-            handle3 = getHandle bias
         name <- naming "BatchNorm"
-        I.batchnorm name handle1 handle2 handle3 nil
+        I.batchnorm name handle1 nil
     instanceNorm input gamma beta eps = Symbol . unsafePerformIO $ do
         let handle1 = getHandle input
             handle2 = getHandle gamma
