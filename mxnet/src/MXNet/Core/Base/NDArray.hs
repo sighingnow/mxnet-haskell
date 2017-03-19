@@ -11,12 +11,16 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module MXNet.Core.Base.NDArray where
 
 import           Control.Monad
+import           Data.Int
 import           Data.Monoid
 import           Data.Vector.Storable (Vector)
 import qualified Data.Vector.Storable as V
@@ -160,7 +164,24 @@ array :: DType a
       -> IO (NDArray a)
 array sh = makeNDArray sh contextCPU
 
-instance DType a => Eq (NDArray a) where
+instance (DType a, Floating a) => Eq (NDArray a) where
+    (==) arr1 arr2 = unsafePerformIO $ do
+        (_, sh1) <- ndshape arr1
+        (_, sh2) <- ndshape arr2
+        if sh1 == sh2
+            then do
+                r <- (abs (arr1 - arr2) `lesser`) <$> full sh1 0.0001
+                V.all (== fromIntegral (1 :: Int)) <$> items r
+            else return False
+
+instance (DType a, a ~ Int8) => Eq (NDArray Int8) where
+    (==) arr1 arr2 = unsafePerformIO $ do
+        let handle1 = getHandle arr1
+            handle2 = getHandle arr2
+        let cmp = V.all (== fromIntegral (1 :: Int)) :: Vector a -> Bool
+        (cmp <$>) . items . NDArray =<< I.broadcast_equal handle1 handle2
+
+instance (DType a, a ~ Int32) => Eq (NDArray Int32) where
     (==) arr1 arr2 = unsafePerformIO $ do
         let handle1 = getHandle arr1
             handle2 = getHandle arr2
