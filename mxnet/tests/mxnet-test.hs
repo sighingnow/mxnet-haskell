@@ -53,6 +53,10 @@ ndarrayTest = testGroup "NDArray"
 
         step "arithmetic operators"
         let b = (arr + arr) .* 3 ./ 2
+        print $ b
+        items b >>= print
+        V.sum <$> items b >>= print
+        (round . V.sum) <$> items b >>= print
         r <- V.sum <$> items b
         let expected = 3 * (p * (p+1) `div` 2)
         assertEqual "sum of elements should be as expected" expected (round r)
