@@ -31,8 +31,11 @@ before_install:
   - sudo unlink /usr/bin/gcc && sudo ln -s /usr/bin/gcc-4.8 /usr/bin/gcc
   - sudo unlink /usr/bin/g++ && sudo ln -s /usr/bin/g++-4.8 /usr/bin/g++
   # Build mxnet library.
-  - git clone https://github.com/dmlc/mxnet.git ~/mxnet --recursive
-  - cd ~/mxnet && git checkout v0.9.3 && make && cd ~
+  - git clone https://github.com/apache/incubator-mxnet ~/mxnet --recursive
+  - cd ~/mxnet/nnvm && git checkout master && git pull
+  - cd ~/mxnet/nnvm/dmlc-core && git checkout master && git pull
+  - cd ~/mxnet/dmlc-core && git checkout master && git pull
+  - cd ~/mxnet && make
   - mkdir -p ~/.local/lib
   - cp -f ~/mxnet/lib/libmxnet.so ~/.local/lib/
   - export LIBRARY_PATH=~/.local/lib:$LIBRARY_PATH
