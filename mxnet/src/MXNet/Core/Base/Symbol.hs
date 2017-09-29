@@ -412,10 +412,14 @@ instance Neural Symbol where
         let handle1 = getHandle input
         name <- naming "Dropout"
         I.dropout name handle1 (add @"p" p nil)
-    batchNorm input = Symbol . unsafePerformIO $ do
+    batchNorm input gm bt mm mv = Symbol . unsafePerformIO $ do
         let handle1 = getHandle input
+        let handle2 = getHandle gm
+        let handle3 = getHandle bt
+        let handle4 = getHandle mm
+        let handle5 = getHandle mv
         name <- naming "BatchNorm"
-        I.batchnorm name handle1 nil
+        I.batchnorm name handle1 handle2 handle3 handle4 handle5 nil
     instanceNorm input gamma beta eps = Symbol . unsafePerformIO $ do
         let handle1 = getHandle input
             handle2 = getHandle gamma
@@ -459,6 +463,7 @@ instance Neural Symbol where
         let handle1 = getHandle input
         name <- naming "BlockGrad"
         I.blockgrad name handle1
-    custom op = Symbol . unsafePerformIO $ do
+    custom input op = Symbol . unsafePerformIO $ do
+        let handles = map getHandle input
         name <- naming "Custom"
-        I.custom name op
+        I.custom name handles op

@@ -29,7 +29,7 @@ import MXNet.Core.Base.Internal
 import MXNet.Core.Base.Internal.TH (registerNDArrayOps)
 import MXNet.Core.NNVM.Internal (nnGetOpHandle)
 import Prelude hiding (sin, sinh, cos, cosh, tan, tanh, min, max, round, floor,
-                       abs, sum, sqrt, log, exp, flip, concat)
+                       abs, sum, sqrt, log, exp, flip, concat, reverse, repeat)
 
 -- | Result representation for generic NDArray op.
 class NDArrayOpResult a where

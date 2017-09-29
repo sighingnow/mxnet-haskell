@@ -24,7 +24,9 @@ registerNDArrayOps :: Bool      -- ^ If support "out" key in argument dictionary
                    -> Q [Dec]
 registerNDArrayOps mutable = runIO $ do
     (_, names) <- mxListAllOpNames
-    concat <$> mapM (register mutable) names
+    ds0 <- mapM (register mutable) names
+    let ds = concat ds0
+    return ds
   where
     register mutable _name = do
         (_, handle) <- nnGetOpHandle _name
@@ -35,7 +37,9 @@ registerNDArrayOps mutable = runIO $ do
 registerSymbolOps :: Q [Dec]
 registerSymbolOps = runIO $ do
     (_, names) <- mxListAllOpNames
-    concat <$> mapM register names
+    ds0 <- mapM register names
+    let ds = concat ds0
+    return ds
   where
     register _name = do
         (_, handle) <- nnGetOpHandle _name
@@ -52,11 +56,16 @@ makeNDArrayFunc :: Bool     -- ^ If support "out" key in argument dictionary.
                 -> IO [Dec] -- ^ Generated signature and function definition.
 makeNDArrayFunc mutable _name desc argv argtype = do
 
-    let deprecated = desc `startWith` "DEPRECATED"
+    let deprecated = desc `startWith` "DEPRECATED" ||
+                     _name == "Softmax" -- Softmax is renamed to SoftmaxOutput
+
+    let alias = _name `elem` ["Concat", "Pad", "Flatten", "Reshape"]
 
     let name = let str = if head _name == '_'
                             then _name
-                            else toLower <$> _name
+                            else if _name == "where"
+                               then "where_"
+                               else toLower <$> _name
                 in if mutable then str <> "'" else str
 
     let explicitArg = getExplicitArg argv argtype
@@ -157,8 +166,11 @@ makeNDArrayFunc mutable _name desc argv argtype = do
 
         fun = FunD (mkName name) [Clause (ndarrayArgP <> ordinaryArgP <> implicitArgP <> returnArgP) func []]
 
+    print $ ppr fun
+
 
     return $ if null argv || deprecated
+                          || alias
                           || _name `elem` ["_NDArray", "_Native", "_arange"]
                           || _name `elem` ["cast", "crop"]  -- duplicate with "Cast" and "Crop"
                           || null explicitArg
@@ -177,12 +189,16 @@ makeNDArrayFunc mutable _name desc argv argtype = do
                     'l':'o':'n':'g':_ -> ConT . mkName $ "Int"
                     "string" -> ConT . mkName $ "String"
                     "NDArray" -> ConT . mkName $ "NDArrayHandle"
+                    "NDArray-or-Symbol" -> ConT . mkName $ "NDArrayHandle"
+                    "NDArray-or-Symbol[]" -> AppT ListT . ConT . mkName $ "NDArrayHandle"
                     "Symbol" -> ConT . mkName $ "NDArrayHandle"
                     "NDArray[]" -> AppT ListT . ConT . mkName $ "NDArrayHandle"
                     "Symbol[]" -> AppT ListT . ConT . mkName $ "NDArrayHandle"
                     "Symbol or Symbol[]" -> AppT ListT . ConT . mkName $ "NDArrayHandle"
                     '{':_ -> ConT . mkName $ "String"
                     "Shape(tuple)" -> ConT . mkName $ "String"
+                    "tuple of <float>"  -> AppT ListT . ConT . mkName $ "Float"
+                    "tuple of <double>" -> AppT ListT . ConT . mkName $ "Double"
                     s -> ConT . mkName $ "unknown type name: " <> s
 
     -- | Generate type signatures for implicit arguments.
@@ -219,11 +235,16 @@ makeSymbolFunc :: String   -- ^ Function's name.
                -> IO [Dec] -- ^ Generated signature and function definition.
 makeSymbolFunc _name desc argv argtype = do
 
-    let deprecated = desc `startWith` "DEPRECATED"
+    let deprecated = desc `startWith` "DEPRECATED" ||
+                     _name == "Softmax" -- Softmax is renamed to SoftmaxOutput
+
+    let alias = _name `elem` ["Concat", "Pad", "Flatten", "Reshape"]
 
     let name = let str = if head _name == '_'
                             then _name
-                            else toLower <$> _name
+                            else if _name == "where"
+                               then "where_"
+                               else toLower <$> _name
                 in str
 
     let explicitArg = getExplicitArg argv argtype
@@ -314,12 +335,14 @@ makeSymbolFunc _name desc argv argtype = do
 
         fun = FunD (mkName name) [Clause (nameArgP <> ndarrayArgP <> ordinaryArgP <> implicitArgP) func []]
 
-
+        
     return $ if null argv || deprecated
+                          || alias
                           || _name `elem` ["_NDArray", "_Native", "_arange"]
                           || _name `elem` ["cast", "crop"]  -- duplicate with "Cast" and "Crop"
                           || null explicitArg
                           || _name == "take" -- Operator @take@ will take two @SymbolHandle@ as arguments, can't be marshalled as strings.
+                          || _name == "where"
                 then []
                 else [sig, fun]
   where
@@ -335,11 +358,15 @@ makeSymbolFunc _name desc argv argtype = do
                     "string" -> ConT . mkName $ "String"
                     "NDArray" -> ConT . mkName $ "SymbolHandle"
                     "Symbol" -> ConT . mkName $ "SymbolHandle"
+                    "NDArray-or-Symbol" -> ConT . mkName $ "SymbolHandle"
+                    "NDArray-or-Symbol[]" -> AppT ListT . ConT . mkName $ "SymbolHandle"
                     "NDArray[]" -> AppT ListT . ConT . mkName $ "SymbolHandle"
                     "Symbol[]" -> AppT ListT . ConT . mkName $ "SymbolHandle"
                     "Symbol or Symbol[]" -> AppT ListT . ConT . mkName $ "SymbolHandle"
                     '{':_ -> ConT . mkName $ "String"
                     "Shape(tuple)" -> ConT . mkName $ "String"
+                    "tuple of <float>" -> AppT ListT . ConT . mkName $ "Float"
+                    "tuple of <double>" -> AppT ListT . ConT . mkName $ "Double"
                     s -> ConT . mkName $ "unknown type name: " <> s
 
     -- | Generate type signatures for implicit arguments.
