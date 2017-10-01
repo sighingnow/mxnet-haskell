@@ -24,9 +24,7 @@ registerNDArrayOps :: Bool      -- ^ If support "out" key in argument dictionary
                    -> Q [Dec]
 registerNDArrayOps mutable = runIO $ do
     (_, names) <- mxListAllOpNames
-    ds0 <- mapM (register mutable) names
-    let ds = concat ds0
-    return ds
+    concat <$> mapM (register mutable) names
   where
     register mutable _name = do
         (_, handle) <- nnGetOpHandle _name
@@ -37,9 +35,7 @@ registerNDArrayOps mutable = runIO $ do
 registerSymbolOps :: Q [Dec]
 registerSymbolOps = runIO $ do
     (_, names) <- mxListAllOpNames
-    ds0 <- mapM register names
-    let ds = concat ds0
-    return ds
+    concat <$> mapM register names
   where
     register _name = do
         (_, handle) <- nnGetOpHandle _name
@@ -165,8 +161,6 @@ makeNDArrayFunc mutable _name desc argv argtype = do
                         AllPhases
 
         fun = FunD (mkName name) [Clause (ndarrayArgP <> ordinaryArgP <> implicitArgP <> returnArgP) func []]
-
-    print $ ppr fun
 
 
     return $ if null argv || deprecated
@@ -335,7 +329,7 @@ makeSymbolFunc _name desc argv argtype = do
 
         fun = FunD (mkName name) [Clause (nameArgP <> ndarrayArgP <> ordinaryArgP <> implicitArgP) func []]
 
-        
+
     return $ if null argv || deprecated
                           || alias
                           || _name `elem` ["_NDArray", "_Native", "_arange"]
