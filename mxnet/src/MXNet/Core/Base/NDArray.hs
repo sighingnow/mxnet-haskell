@@ -170,7 +170,7 @@ instance {-# OVERLAPPABLE #-} (DType a, Floating a) => Eq (NDArray a) where
         (_, sh2) <- ndshape arr2
         if sh1 == sh2
             then do
-                r <- (abs (arr1 - arr2) `lesser`) <$> full sh1 0.0001
+                r <- (abs (arr1 - arr2) `lesser`) =<< full sh1 0.0001
                 V.all (== fromIntegral (1 :: Int)) <$> items r
             else return False
 
@@ -268,47 +268,67 @@ instance DType a => Floating (NDArray a) where
         I.tanh handle1
 
 instance Tensor NDArray where
-    dot arr1 arr2 = NDArray . unsafePerformIO $ do
+    dot arr1 arr2 = NDArray <$> do
         let handle1 = getHandle arr1
             handle2 = getHandle arr2
         I.dot handle1 handle2 nil
-    reshape arr sh = NDArray . unsafePerformIO $ do
+    reshape arr sh = NDArray <$> do
         let handle = getHandle arr
         (_, handle') <- mxNDArrayReshape handle (length sh) sh
         return handle'
-    transpose arr = NDArray . unsafePerformIO $ do
+    transpose arr = NDArray <$> do
         let handle = getHandle arr
         I.transpose handle nil
-    (.+) arr value = NDArray . unsafePerformIO $ do
+    (+.) arr1 arr2 = NDArray <$> do
+        let handle1 = getHandle arr1
+            handle2 = getHandle arr2
+        I.broadcast_add handle1 handle2
+    (-.) arr1 arr2 = NDArray <$> do
+        let handle1 = getHandle arr1
+            handle2 = getHandle arr2
+        I.broadcast_sub handle1 handle2
+    (*.) arr1 arr2 = NDArray <$> do
+        let handle1 = getHandle arr1
+            handle2 = getHandle arr2
+        I.broadcast_mul handle1 handle2
+    (/.) arr1 arr2 = NDArray <$> do
+        let handle1 = getHandle arr1
+            handle2 = getHandle arr2
+        I.broadcast_div handle1 handle2
+    (^.) arr1 arr2 = NDArray <$> do
+        let handle1 = getHandle arr1
+            handle2 = getHandle arr2
+        I.broadcast_power handle1 handle2
+    (.+) arr value = NDArray <$> do
         let handle = getHandle arr
         I._plus_scalar handle (realToFrac value)
     {-# INLINE (.+) #-}
-    (.-) arr value = NDArray . unsafePerformIO $ do
+    (.-) arr value = NDArray <$> do
         let handle = getHandle arr
         I._minus_scalar handle (realToFrac value)
     {-# INLINE (.-) #-}
-    (.*) arr value = NDArray . unsafePerformIO $ do
+    (.*) arr value = NDArray <$> do
         let handle = getHandle arr
         I._mul_scalar handle (realToFrac value)
     {-# INLINE (.*) #-}
-    (./) arr value = NDArray . unsafePerformIO $ do
+    (./) arr value = NDArray <$> do
         let handle = getHandle arr
         I._div_scalar handle (realToFrac value)
     {-# INLINE (./) #-}
-    (.^) arr value = NDArray . unsafePerformIO $ do
+    (.^) arr value = NDArray <$> do
         let handle = getHandle arr
         I._power_scalar handle (realToFrac value)
     {-# INLINE (.^) #-}
 
-    (..-) value arr = NDArray . unsafePerformIO $ do
+    (..-) value arr = NDArray <$> do
         let handle = getHandle arr
         I._rminus_scalar handle (realToFrac value)
     {-# INLINE (..-) #-}
-    (../) value arr = NDArray . unsafePerformIO $ do
+    (../) value arr = NDArray <$> do
         let handle = getHandle arr
         I._rdiv_scalar handle (realToFrac value)
     {-# INLINE (../) #-}
-    (..^) value arr = NDArray . unsafePerformIO $ do
+    (..^) value arr = NDArray <$> do
         let handle = getHandle arr
         I._rpower_scalar handle (realToFrac value)
     {-# INLINE (..^) #-}
@@ -329,130 +349,130 @@ instance Tensor NDArray where
         let handle = getHandle arr
         I._power_scalar' handle (realToFrac value) [handle]
 
-    _Maximum arr1 arr2 = NDArray . unsafePerformIO $ do
+    _Maximum arr1 arr2 = NDArray <$> do
         let handle1 = getHandle arr1
             handle2 = getHandle arr2
         I.broadcast_maximum handle1 handle2
     {-# INLINE _Maximum #-}
-    _Maximum' arr scalar = NDArray . unsafePerformIO $ do
+    _Maximum' arr scalar = NDArray <$> do
         let handle = getHandle arr
         I._maximum_scalar handle (realToFrac scalar)
     {-# INLINE _Maximum' #-}
-    _Minimum arr1 arr2 = NDArray . unsafePerformIO $ do
+    _Minimum arr1 arr2 = NDArray <$> do
         let handle1 = getHandle arr1
             handle2 = getHandle arr2
         I.broadcast_minimum handle1 handle2
     {-# INLINE _Minimum #-}
-    _Minimum' arr scalar = NDArray . unsafePerformIO $ do
+    _Minimum' arr scalar = NDArray <$> do
         let handle = getHandle arr
         I._minimum_scalar handle (realToFrac scalar)
     {-# INLINE _Minimum' #-}
-    equal arr1 arr2 = NDArray . unsafePerformIO $ do
+    equal arr1 arr2 = NDArray <$> do
         let handle1 = getHandle arr1
             handle2 = getHandle arr2
         I.broadcast_equal handle1 handle2
     {-# INLINE equal #-}
-    equal' arr scalar = NDArray . unsafePerformIO $ do
+    equal' arr scalar = NDArray <$> do
         let handle = getHandle arr
         I._equal_scalar handle (realToFrac scalar)
     {-# INLINE equal' #-}
-    notEqual arr1 arr2 = NDArray . unsafePerformIO $ do
+    notEqual arr1 arr2 = NDArray <$> do
         let handle1 = getHandle arr1
             handle2 = getHandle arr2
         I.broadcast_not_equal handle1 handle2
     {-# INLINE notEqual #-}
-    notEqual' arr scalar = NDArray . unsafePerformIO $ do
+    notEqual' arr scalar = NDArray <$> do
         let handle = getHandle arr
         I._not_equal_scalar handle (realToFrac scalar)
     {-# INLINE notEqual' #-}
-    greater arr1 arr2 = NDArray . unsafePerformIO $ do
+    greater arr1 arr2 = NDArray <$> do
         let handle1 = getHandle arr1
             handle2 = getHandle arr2
         I.broadcast_greater handle1 handle2
     {-# INLINE greater #-}
-    greater' arr scalar = NDArray . unsafePerformIO $ do
+    greater' arr scalar = NDArray <$> do
         let handle = getHandle arr
         I._greater_scalar handle (realToFrac scalar)
     {-# INLINE greater' #-}
-    greaterEqual arr1 arr2 = NDArray . unsafePerformIO $ do
+    greaterEqual arr1 arr2 = NDArray <$> do
         let handle1 = getHandle arr1
             handle2 = getHandle arr2
         I.broadcast_greater_equal handle1 handle2
     {-# INLINE greaterEqual #-}
-    greaterEqual' arr scalar = NDArray . unsafePerformIO $ do
+    greaterEqual' arr scalar = NDArray <$> do
         let handle = getHandle arr
         I._greater_equal_scalar handle (realToFrac scalar)
     {-# INLINE greaterEqual' #-}
-    lesser arr1 arr2 = NDArray . unsafePerformIO $ do
+    lesser arr1 arr2 = NDArray <$> do
         let handle1 = getHandle arr1
             handle2 = getHandle arr2
         I.broadcast_lesser handle1 handle2
     {-# INLINE lesser #-}
-    lesser' arr scalar = NDArray . unsafePerformIO $ do
+    lesser' arr scalar = NDArray <$> do
         let handle = getHandle arr
         I._lesser_scalar handle (realToFrac scalar)
     {-# INLINE lesser' #-}
-    lesserEqual arr1 arr2 = NDArray . unsafePerformIO $ do
+    lesserEqual arr1 arr2 = NDArray <$> do
         let handle1 = getHandle arr1
             handle2 = getHandle arr2
         I.broadcast_lesser_equal handle1 handle2
     {-# INLINE lesserEqual #-}
-    lesserEqual' arr scalar = NDArray . unsafePerformIO $ do
+    lesserEqual' arr scalar = NDArray <$> do
         let handle = getHandle arr
         I._lesser_equal_scalar handle (realToFrac scalar)
     {-# INLINE lesserEqual' #-}
 
 instance Neural NDArray where
-    fullyConnected input weight bias n = NDArray . unsafePerformIO $ do
+    fullyConnected input weight bias n = NDArray <$> do
         let handle1 = getHandle input
             handle2 = getHandle weight
             handle3 = getHandle bias
         I.fullyconnected handle1 handle2 handle3 n nil
-    correlation input1 input2 = NDArray . unsafePerformIO $ do
+    correlation input1 input2 = NDArray <$> do
         let handle1 = getHandle input1
             handle2 = getHandle input2
         I.correlation handle1 handle2 nil
-    activation input act = NDArray . unsafePerformIO $ do
+    activation input act = NDArray <$> do
         let handle1 = getHandle input
         I.activation handle1 act
-    leakyReLU input act = NDArray . unsafePerformIO $ do
+    leakyReLU input act = NDArray <$> do
         let handle1 = getHandle input
         I.leakyrelu handle1 (add @"act_type" act nil)
-    softmaxActivation input = NDArray . unsafePerformIO $ do
+    softmaxActivation input = NDArray <$> do
         let handle1 = getHandle input
         I.softmaxactivation handle1 nil
-    dropout input p = NDArray . unsafePerformIO $ do
+    dropout input p = NDArray <$> do
         let handle1 = getHandle input
         I.dropout handle1 (add @"p" p nil)
-    batchNorm input gm bt mm mv = NDArray . unsafePerformIO $ do
+    batchNorm input gm bt mm mv = NDArray <$> do
         let handle1 = getHandle input
         let handle2 = getHandle gm
         let handle3 = getHandle bt
         let handle4 = getHandle mm
         let handle5 = getHandle mv
         I.batchnorm handle1 handle2 handle3 handle4 handle5 nil
-    instanceNorm input gamma beta eps = NDArray . unsafePerformIO $ do
+    instanceNorm input gamma beta eps = NDArray <$> do
         let handle1 = getHandle input
             handle2 = getHandle gamma
             handle3 = getHandle beta
         I.instancenorm handle1 handle2 handle3 (add @"eps" eps nil)
-    l2Normalization input eps mode = NDArray . unsafePerformIO $ do
+    l2Normalization input eps mode = NDArray <$> do
         let handle1 = getHandle input
         I.l2normalization handle1 (add @"eps" eps $ add @"mode" mode nil)
-    convolution input weight bias kernel n = NDArray . unsafePerformIO $ do
+    convolution input weight bias kernel n = NDArray <$> do
         let handle1 = getHandle input
             handle2 = getHandle weight
             handle3 = getHandle bias
         I.convolution handle1 handle2 handle3 kernel n nil
-    lrn input alpha beta knorm nsize = NDArray . unsafePerformIO $ do
+    lrn input alpha beta knorm nsize = NDArray <$> do
         let handle1 = getHandle input
         I.lrn handle1 nsize (add @"alpha" alpha $ add @"beta" beta $ add @"knorm" knorm nil)
-    deconvolution input weight bias kernel nfilter = NDArray . unsafePerformIO $ do
+    deconvolution input weight bias kernel nfilter = NDArray <$> do
         let handle1 = getHandle input
             handle2 = getHandle weight
             handle3 = getHandle bias
         I.deconvolution handle1 handle2 handle3 kernel nfilter nil
-    pooling input kernel pooltype = NDArray . unsafePerformIO $ do
+    pooling input kernel pooltype = NDArray <$> do
         let handle1 = getHandle input
         I.pooling handle1 kernel pooltype nil
     -- roiPooling
@@ -464,7 +484,7 @@ instance Neural NDArray where
     -- spatialTransformer
     -- linearRegressionOutput
     -- logisticRegressionOutput
-    softmaxOutput input label = NDArray . unsafePerformIO $ do
+    softmaxOutput input label = NDArray <$> do
         let handle1 = getHandle input
             handle2 = getHandle label
         I.softmaxoutput handle1 handle2 nil
@@ -473,12 +493,12 @@ instance Neural NDArray where
     -- softmaxCrossEntropy
     -- smoothL1
     -- identityAttachKLSparsereg
-    makeLoss input grad_scale valid_thresh normalization = NDArray . unsafePerformIO $ do
+    makeLoss input grad_scale valid_thresh normalization = NDArray <$> do
         let handle1 = getHandle input
         I.makeloss handle1 (add @"grad_scale" grad_scale $ add @"valid_thresh" valid_thresh $ add @"normalization" normalization nil)
-    blockGrad input = NDArray . unsafePerformIO $ do
+    blockGrad input = NDArray <$> do
         let handle1 = getHandle input
         I.blockgrad handle1
-    custom input op = NDArray . unsafePerformIO $ do
+    custom input op = NDArray <$> do
         let handles = map getHandle input
         I.custom handles op

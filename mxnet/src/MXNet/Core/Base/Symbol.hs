@@ -223,154 +223,184 @@ instance DType a => Floating (Symbol a) where
         I.tanh ("tanh(" <> name1 <> ")") handle1
 
 instance Tensor Symbol where
-    dot sym1 sym2 = Symbol . unsafePerformIO $ do
+    dot sym1 sym2 = Symbol <$> do
         let handle1 = getHandle sym1
             handle2 = getHandle sym2
         name1 <- getName sym1
         name2 <- getName sym2
         I.dot ("dot(" <> name1 <> "," <> name2 <> ")") handle1 handle2 nil
-    reshape sym sh = Symbol . unsafePerformIO $ do
+    reshape sym sh = Symbol <$> do
         let handle = getHandle sym
             sh' = "(" <> (init . tail . show $ sh) <> ")"
         name1 <- getName sym
         I.reshape ("reshape(" <> name1 <> "," <> sh' <> ")") handle (add @"shape" sh' nil)
-    transpose sym = Symbol . unsafePerformIO $ do
+    transpose sym = Symbol <$> do
         let handle = getHandle sym
         name1 <- getName sym
         I.transpose ("transpose(" <> name1 <> ")") handle nil
-    (.+) sym value = Symbol . unsafePerformIO $ do
+    (+.) sym1 sym2 = Symbol <$> do
+        let handle1 = getHandle sym1
+            handle2 = getHandle sym2
+        name1 <- getName sym1
+        name2 <- getName sym2
+        I._Plus (name1 <> "+" <> name2) handle1 handle2
+    (-.) sym1 sym2 = Symbol <$> do
+        let handle1 = getHandle sym1
+            handle2 = getHandle sym2
+        name1 <- getName sym1
+        name2 <- getName sym2
+        I._Minus (name1 <> "-" <> name2) handle1 handle2
+    (*.) sym1 sym2 = Symbol <$> do
+        let handle1 = getHandle sym1
+            handle2 = getHandle sym2
+        name1 <- getName sym1
+        name2 <- getName sym2
+        I._Mul (name1 <> "*" <> name2) handle1 handle2
+    (/.) sym1 sym2 = Symbol <$> do
+        let handle1 = getHandle sym1
+            handle2 = getHandle sym2
+        name1 <- getName sym1
+        name2 <- getName sym2
+        I._Div (name1 <> "*" <> name2) handle1 handle2
+    (^.) sym1 sym2 = Symbol <$> do
+        let handle1 = getHandle sym1
+            handle2 = getHandle sym2
+        name1 <- getName sym1
+        name2 <- getName sym2
+        I._Power (name1 <> "*" <> name2) handle1 handle2
+    (.+) sym value = Symbol <$> do
         let handle = getHandle sym
         name1 <- getName sym
         I._PlusScalar (name1 <> "+" <> show value) handle (realToFrac value)
     {-# INLINE (.+) #-}
-    (.-) sym value = Symbol . unsafePerformIO $ do
+    (.-) sym value = Symbol <$> do
         let handle = getHandle sym
         name1 <- getName sym
         I._MinusScalar (name1 <> "-" <> show value) handle (realToFrac value)
     {-# INLINE (.-) #-}
-    (.*) sym value = Symbol . unsafePerformIO $ do
+    (.*) sym value = Symbol <$> do
         let handle = getHandle sym
         name1 <- getName sym
         I._MulScalar (name1 <> "*" <> show value) handle (realToFrac value)
     {-# INLINE (.*) #-}
-    (./) sym value = Symbol . unsafePerformIO $ do
+    (./) sym value = Symbol <$> do
         let handle = getHandle sym
         name1 <- getName sym
         I._DivScalar (name1 <> "/" <> show value) handle (realToFrac value)
     {-# INLINE (./) #-}
-    (.^) sym value = Symbol . unsafePerformIO $ do
+    (.^) sym value = Symbol <$> do
         let handle = getHandle sym
         name1 <- getName sym
         I._PowerScalar (name1 <> "^" <> show value) handle (realToFrac value)
     {-# INLINE (.^) #-}
-    (..-) value sym = Symbol . unsafePerformIO $ do
+    (..-) value sym = Symbol <$> do
         let handle = getHandle sym
         name1 <- getName sym
         I._RMinusScalar (show value <> "-" <> name1) handle (realToFrac value)
     {-# INLINE (..-) #-}
-    (../) value sym = Symbol . unsafePerformIO $ do
+    (../) value sym = Symbol <$> do
         let handle = getHandle sym
         name1 <- getName sym
         I._RDivScalar (show value <> "/" <> name1) handle (realToFrac value)
     {-# INLINE (../) #-}
-    (..^) value sym = Symbol . unsafePerformIO $ do
+    (..^) value sym = Symbol <$> do
         let handle = getHandle sym
         name1 <- getName sym
         I._RPowerScalar (show value <> "^" <> name1) handle (realToFrac value)
     {-# INLINE (..^) #-}
 
-    _Maximum sym1 sym2 = Symbol . unsafePerformIO $ do
+    _Maximum sym1 sym2 = Symbol <$> do
         let handle1 = getHandle sym1
             handle2 = getHandle sym2
         name1 <- getName sym1
         name2 <- getName sym2
         I._Maximum ("_Maximum(" <> name1 <> "," <> name2 <> ")") handle1 handle2
     {-# INLINE _Maximum #-}
-    _Maximum' sym scalar = Symbol . unsafePerformIO $ do
+    _Maximum' sym scalar = Symbol <$> do
         let handle = getHandle sym
         name1 <- getName sym
         I._MaximumScalar ("_Maximum'(" <> name1 <> "," <> show scalar <> ")") handle (realToFrac scalar)
     {-# INLINE _Maximum' #-}
-    _Minimum sym1 sym2 = Symbol . unsafePerformIO $ do
+    _Minimum sym1 sym2 = Symbol <$> do
         let handle1 = getHandle sym1
             handle2 = getHandle sym2
         name1 <- getName sym1
         name2 <- getName sym2
         I._Minimum ("_Minimum(" <> name1 <> "," <> name2 <> ")") handle1 handle2
     {-# INLINE _Minimum #-}
-    _Minimum' sym scalar = Symbol . unsafePerformIO $ do
+    _Minimum' sym scalar = Symbol <$> do
         let handle = getHandle sym
         name1 <- getName sym
         I._MinimumScalar ("_Minimum'(" <> name1 <> "," <> show scalar <> ")") handle (realToFrac scalar)
     {-# INLINE _Minimum' #-}
-    equal sym1 sym2 = Symbol . unsafePerformIO $ do
+    equal sym1 sym2 = Symbol <$> do
         let handle1 = getHandle sym1
             handle2 = getHandle sym2
         name1 <- getName sym1
         name2 <- getName sym2
         I.broadcast_equal (name1 <> "==" <> name2) handle1 handle2
     {-# INLINE equal #-}
-    equal' sym scalar = Symbol . unsafePerformIO $ do
+    equal' sym scalar = Symbol <$> do
         let handle = getHandle sym
         name1 <- getName sym
         I._equal_scalar (name1 <> "==" <> show scalar) handle (realToFrac scalar)
     {-# INLINE equal' #-}
-    notEqual sym1 sym2 = Symbol . unsafePerformIO $ do
+    notEqual sym1 sym2 = Symbol <$> do
         let handle1 = getHandle sym1
             handle2 = getHandle sym2
         name1 <- getName sym1
         name2 <- getName sym2
         I.broadcast_not_equal (name1 <> "/=" <> name2) handle1 handle2
     {-# INLINE notEqual #-}
-    notEqual' sym scalar = Symbol . unsafePerformIO $ do
+    notEqual' sym scalar = Symbol <$> do
         let handle = getHandle sym
         name1 <- getName sym
         I._not_equal_scalar (name1 <> "/=" <> show scalar) handle (realToFrac scalar)
     {-# INLINE notEqual' #-}
-    greater sym1 sym2 = Symbol . unsafePerformIO $ do
+    greater sym1 sym2 = Symbol <$> do
         let handle1 = getHandle sym1
             handle2 = getHandle sym2
         name1 <- getName sym1
         name2 <- getName sym2
         I.broadcast_greater (name1 <> ">" <> name2) handle1 handle2
     {-# INLINE greater #-}
-    greater' sym scalar = Symbol . unsafePerformIO $ do
+    greater' sym scalar = Symbol <$> do
         let handle = getHandle sym
         name1 <- getName sym
         I._greater_scalar (name1 <> ">" <> show scalar) handle (realToFrac scalar)
     {-# INLINE greater' #-}
-    greaterEqual sym1 sym2 = Symbol . unsafePerformIO $ do
+    greaterEqual sym1 sym2 = Symbol <$> do
         let handle1 = getHandle sym1
             handle2 = getHandle sym2
         name1 <- getName sym1
         name2 <- getName sym2
         I.broadcast_greater_equal (name1 <> ">=" <> name2) handle1 handle2
     {-# INLINE greaterEqual #-}
-    greaterEqual' sym scalar = Symbol . unsafePerformIO $ do
+    greaterEqual' sym scalar = Symbol <$> do
         let handle = getHandle sym
         name1 <- getName sym
         I._greater_equal_scalar (name1 <> ">=" <> show scalar) handle (realToFrac scalar)
     {-# INLINE greaterEqual' #-}
-    lesser sym1 sym2 = Symbol . unsafePerformIO $ do
+    lesser sym1 sym2 = Symbol <$> do
         let handle1 = getHandle sym1
             handle2 = getHandle sym2
         name1 <- getName sym1
         name2 <- getName sym2
         I.broadcast_lesser (name1 <> "<" <> name2) handle1 handle2
     {-# INLINE lesser #-}
-    lesser' sym scalar = Symbol . unsafePerformIO $ do
+    lesser' sym scalar = Symbol <$> do
         let handle = getHandle sym
         name1 <- getName sym
         I._lesser_scalar (name1 <> "<" <> show scalar) handle (realToFrac scalar)
     {-# INLINE lesser' #-}
-    lesserEqual sym1 sym2 = Symbol . unsafePerformIO $ do
+    lesserEqual sym1 sym2 = Symbol <$> do
         let handle1 = getHandle sym1
             handle2 = getHandle sym2
         name1 <- getName sym1
         name2 <- getName sym2
         I.broadcast_lesser_equal (name1 <> "<=" <> name2) handle1 handle2
     {-# INLINE lesserEqual #-}
-    lesserEqual' sym scalar = Symbol . unsafePerformIO $ do
+    lesserEqual' sym scalar = Symbol <$> do
         let handle = getHandle sym
         name1 <- getName sym
         I._lesser_equal_scalar (name1 <> "<=" <> show scalar) handle (realToFrac scalar)
@@ -385,34 +415,34 @@ naming :: String -> IO String
 naming prefix = ((prefix <>) . show) <$> atomicModifyIORef symid (\a -> (a+1, a))
 
 instance Neural Symbol where
-    fullyConnected input weight bias n = Symbol . unsafePerformIO $ do
+    fullyConnected input weight bias n = Symbol <$> do
         let handle1 = getHandle input
             handle2 = getHandle weight
             handle3 = getHandle bias
         name <- naming "FullyConnected"
         I.fullyconnected name handle1 handle2 handle3 n nil
-    correlation input1 input2 = Symbol . unsafePerformIO $ do
+    correlation input1 input2 = Symbol <$> do
         let handle1 = getHandle input1
             handle2 = getHandle input2
         name <- naming "Correlation"
         I.correlation name handle1 handle2 nil
-    activation input act = Symbol . unsafePerformIO $ do
+    activation input act = Symbol <$> do
         let handle1 = getHandle input
         name <- naming "Activation"
         I.activation name handle1 act
-    leakyReLU input act = Symbol . unsafePerformIO $ do
+    leakyReLU input act = Symbol <$> do
         let handle1 = getHandle input
         name <- naming "LeakyReLU"
         I.leakyrelu name handle1 (add @"act_type" act nil)
-    softmaxActivation input = Symbol . unsafePerformIO $ do
+    softmaxActivation input = Symbol <$> do
         let handle1 = getHandle input
         name <- naming "SoftmaxActivation"
         I.softmaxactivation name handle1 nil
-    dropout input p = Symbol . unsafePerformIO $ do
+    dropout input p = Symbol <$> do
         let handle1 = getHandle input
         name <- naming "Dropout"
         I.dropout name handle1 (add @"p" p nil)
-    batchNorm input gm bt mm mv = Symbol . unsafePerformIO $ do
+    batchNorm input gm bt mm mv = Symbol <$> do
         let handle1 = getHandle input
         let handle2 = getHandle gm
         let handle3 = getHandle bt
@@ -420,50 +450,50 @@ instance Neural Symbol where
         let handle5 = getHandle mv
         name <- naming "BatchNorm"
         I.batchnorm name handle1 handle2 handle3 handle4 handle5 nil
-    instanceNorm input gamma beta eps = Symbol . unsafePerformIO $ do
+    instanceNorm input gamma beta eps = Symbol <$> do
         let handle1 = getHandle input
             handle2 = getHandle gamma
             handle3 = getHandle beta
         name <- naming "InstnaceNorm"
         I.instancenorm name handle1 handle2 handle3 (add @"eps" eps nil)
-    l2Normalization input eps mode = Symbol . unsafePerformIO $ do
+    l2Normalization input eps mode = Symbol <$> do
         let handle1 = getHandle input
         name <- naming "L2Normalization"
         I.l2normalization name handle1 (add @"eps" eps $ add @"mode" mode nil)
-    convolution input weight bias kernel n = Symbol . unsafePerformIO $ do
+    convolution input weight bias kernel n = Symbol <$> do
         let handle1 = getHandle input
             handle2 = getHandle weight
             handle3 = getHandle bias
         name <- naming "Convolution"
         I.convolution name handle1 handle2 handle3 kernel n nil
-    lrn input alpha beta knorm nsize = Symbol . unsafePerformIO $ do
+    lrn input alpha beta knorm nsize = Symbol <$> do
         let handle1 = getHandle input
         name <- naming "LRN"
         I.lrn name handle1 nsize (add @"alpha" alpha $ add @"beta" beta $ add @"knorm" knorm nil)
-    deconvolution input weight bias kernel nfilter = Symbol . unsafePerformIO $ do
+    deconvolution input weight bias kernel nfilter = Symbol <$> do
         let handle1 = getHandle input
             handle2 = getHandle weight
             handle3 = getHandle bias
         name <- naming "Deconvolution"
         I.deconvolution name handle1 handle2 handle3 kernel nfilter nil
-    pooling input kernel pooltype = Symbol . unsafePerformIO $ do
+    pooling input kernel pooltype = Symbol <$> do
         let handle1 = getHandle input
         name <- naming "Pooling"
         I.pooling name handle1 kernel pooltype nil
-    softmaxOutput input label = Symbol . unsafePerformIO $ do
+    softmaxOutput input label = Symbol <$> do
         let handle1 = getHandle input
             handle2 = getHandle label
         name <- naming "SoftmaxOutput"
         I.softmaxoutput name handle1 handle2 nil
-    makeLoss input grad_scale valid_thresh normalization = Symbol . unsafePerformIO $ do
+    makeLoss input grad_scale valid_thresh normalization = Symbol <$> do
         let handle1 = getHandle input
         name <- naming "MakeLoss"
         I.makeloss name handle1 (add @"grad_scale" grad_scale $ add @"valid_thresh" valid_thresh $ add @"normalization" normalization nil)
-    blockGrad input = Symbol . unsafePerformIO $ do
+    blockGrad input = Symbol <$> do
         let handle1 = getHandle input
         name <- naming "BlockGrad"
         I.blockgrad name handle1
-    custom input op = Symbol . unsafePerformIO $ do
+    custom input op = Symbol <$> do
         let handles = map getHandle input
         name <- naming "Custom"
         I.custom name handles op

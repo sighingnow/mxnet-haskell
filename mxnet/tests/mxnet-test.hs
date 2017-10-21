@@ -52,13 +52,13 @@ ndarrayTest = testGroup "NDArray"
         assertEqual "size should coincide" p s
 
         step "arithmetic operators"
-        let b = (arr + arr) .* 3 ./ 2
+        b <- (arr + arr) .* 3 >>= (./ 2)
         r <- V.sum <$> items b
         let expected = 3 * (p * (p+1) `div` 2)
         assertEqual "sum of elements should be as expected" expected (round r)
         
         step "comparison with scalar"
-        let b = (_Maximum' arr 1000)
+        b <- _Maximum' arr 1000
         r <- V.sum <$> items b
         let expected = 1000 * p
         assertEqual "_Maximum' should set the whole ndarray" expected (round r)
@@ -68,10 +68,10 @@ ndarrayTest = testGroup "NDArray"
         a <- array [2, 3] [1 .. 6]
 
         step "ndarray dot product"
-        let b = a `dot` transpose a
+        b <- (a `dot`) =<< transpose a
         expected1 <- array [2, 2] [14, 32, 32, 77] :: IO (NDArray Float)
         assertEqual "a `dot` transpose a" expected1 b
-        let c = transpose a `dot` a
+        c <- transpose a >>= (`dot` a)
         expected2 <- array [3, 3] [17, 22, 27, 22, 29, 36, 27, 36, 45] :: IO (NDArray Float)
         assertEqual "transpose a `dot` a" expected2 c
 
@@ -80,33 +80,33 @@ ndarrayTest = testGroup "NDArray"
         a <- array [4] [-0.5, -0.1, 0.1, 0.5]
 
         step "relu activation"
-        let r = activation a "relu"
+        r <- activation a "relu"
         expected <- array [4] [0.0, 0.0, 0.1, 0.5] :: IO (NDArray Float)
         assertEqual "relu activation" expected r
 
         step "sigmoid activation"
-        let r = activation a "sigmoid"
+        r <- activation a "sigmoid"
         expected <- array [4] [0.37754068, 0.4750208, 0.52497917, 0.62245935] :: IO (NDArray Float)
         assertEqual "sigmoid activation" expected r
 
         step "softrelu activation"
-        let r = activation a "softrelu"
+        r <- activation a "softrelu"
         expected <- array [4] [0.47407699, 0.64439672, 0.74439669, 0.97407699] :: IO (NDArray Float)
         assertEqual "softrelu activation" expected r
 
         step "tanh activation"
-        let r = activation a "tanh"
+        r <- activation a "tanh"
         expected <- array [4] [-0.46211717, -0.099667996, 0.099667996, 0.46211717] :: IO (NDArray Float)
         assertEqual "tanh activation" expected r
 
         step "softmax activation"
-        let r = softmaxActivation a
+        r <- softmaxActivation a
         expected <- array [4] [0.1422025, 0.21214119, 0.25910985, 0.38654646] :: IO (NDArray Float)
         assertEqual "softmax activation" expected r
 
         step "leakyReLU activation"  -- for leakyReLU, input must be a multiple dimensions ndarray.
         a' <- array [1, 4] [-0.5, -0.1, 0.1, 0.5]
-        let r = leakyReLU a' "leaky" 
+        r <- leakyReLU a' "leaky" 
         expected <- array [1, 4] [-0.125, -0.025, 0.1, 0.5] :: IO (NDArray Float)
         assertEqual "leakyReLU activation" expected r
     ]
@@ -129,7 +129,7 @@ symbolTest = testGroup "Symbol"
         arr2 <- array [2, 3] [5 .. 10]
 
         step "bind and arithmetic operators"
-        let c = (a + b .+ 2) ./ 2
+        c <- a + b .+ 2 >>= (./ 2)
         expected <- array [2, 3] [4 .. 9]
         exec <- bind c contextCPU [ ("a", arr1)
                                   , ("b", arr2) ]
@@ -138,14 +138,14 @@ symbolTest = testGroup "Symbol"
         assertEqual "bind and arithmetics with scalar" expected r
 
         step "bind and linear algebra"
-        let c = a `dot` transpose b
+        c <- (a `dot`) =<< transpose b
         expected <- array [2, 2] [38, 56, 92, 137]
         exec <- bind c contextCPU [ ("a", arr1)
                                   , ("b", arr2) ]
         forward exec False
         [r] <- getOutputs exec
         assertEqual "bind and a `dot` transpose b" expected r
-        let c = transpose a `dot` b
+        c <- transpose a >>= (`dot` b)
         expected <- array [3, 3] [ 37, 42, 47
                                  , 50, 57, 64
                                  , 63, 72, 81 ]
@@ -156,14 +156,14 @@ symbolTest = testGroup "Symbol"
         assertEqual "bind and transpose a `dot` b" expected r
 
         step "bind and activation"
-        let c = softmaxActivation a
+        c <- softmaxActivation a
         expected <- array [2, 3] [ 0.09003057, 0.24472848, 0.66524094
                                  , 0.09003057, 0.24472848, 0.66524094 ]
         exec <- bind c contextCPU [ ("a", arr1) ]
         forward exec False
         [r] <- getOutputs exec
         assertEqual "bind and softmax activation" expected r
-        let c = leakyReLU a "leaky"
+        c <- leakyReLU a "leaky"
         expected <- array [2, 3] [ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 ]
         exec <- bind c contextCPU [ ("a", arr1) ]
         forward exec False
