@@ -40,9 +40,9 @@ before_install:
   # Download pre-built mxnet library.
   - wget -O mxnet-lib.zip "https://drive.google.com/uc?export=download&id=0B3nF_Z9CRFTUZlhyQXFubUF5OUU" # version 0.12.0-rc0
   - unzip mxnet-lib.zip -d mxnet-lib
-  - export LIBRARY_PATH=~/mxnet-lib/lib:$LIBRARY_PATH
-  - export LD_LIBRARY_PATH=~/mxnet-lib/lib:$LD_LIBRARY_PATH
-  - export C_INCLUDE_PATH=~/mxnet-lib/include:$C_INCLUDE_PATH
+  - sudo cp mxnet-lib/lib/libmxnet.so /usr/lib/
+  - sudo cp -R mxnet-lib/include/nnvm /usr/include/
+  - sudo cp -R mxnet-lib/include/mxnet /usr/include/
   # Set up haskell environment.
   - mkdir -p ~/.local/bin
   - export PATH=~/.local/bin:$PATH
