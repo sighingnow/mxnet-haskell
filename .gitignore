@@ -26,5 +26,6 @@ _cache/
 _site/
 .stack-work/
 
-# extra-include-dirs
+# extra-include-dirs and extra-library-dirs
 include/
+lib/
