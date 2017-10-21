@@ -417,9 +417,11 @@ getExplicitArg :: [String]              -- ^ Argument names.
 getExplicitArg argv argtype = [t | Just t <- resolve <$> zip argv argtype]
     where
         resolve (v, t) = let ts = splitArgType t
-                            in if "optional" `elem` ts
+                          in if "optional" `elem` ts
                                 then Nothing
-                                else Just (v, head ts)
+                                else if null ts                            -- Seems that `tuple of <float>` can't be exported correctly by mxSymbolGetAtomicSymbolInfo.
+                                        then Just (v, "tuple of <float>")
+                                        else Just (v, head ts)
 
 -- | Get implicit arguments from all arguments.
 getImplicitArg :: [String]                      -- ^ Argument names.
