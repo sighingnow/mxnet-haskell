@@ -139,6 +139,10 @@ class Tensor tensor => Neural tensor where
     batchNorm
         :: DType a
         => tensor a     -- ^ Input data to batch normalization.
+        -> tensor a     -- ^ Gamma
+        -> tensor a     -- ^ Beta
+        -> tensor a     -- ^ Moving mean
+        -> tensor a     -- ^ Moving var
         -> tensor a
     -- | An operator taking in a n-dimensional input tensor (n > 2), and normalizing the input by subtracting the mean
     -- and variance calculated over the spatial dimensions.
@@ -308,7 +312,8 @@ class Tensor tensor => Neural tensor where
     -- | Custom operator implemented in frontend.
     custom
         :: DType a
-        => String     -- ^ Type of custom operator, must be registered first.
+        => [tensor a] -- ^ Input of custom operator
+        -> String     -- ^ Type of custom operator, must be registered first.
         -> tensor a
 
 

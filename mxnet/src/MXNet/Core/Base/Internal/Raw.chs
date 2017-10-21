@@ -222,7 +222,7 @@ mxNDArrayGetShape handle = do
 -- | Get the content of the data in NDArray.
 {#fun MXNDArrayGetData as mxNDArrayGetData
     { id `NDArrayHandle'            -- ^ The NDArray handle.
-    , alloca- `Ptr MXFloat' peek*
+    , alloca- `Ptr ()' peek*
     } -> `Int' -- ^ Pointer holder to get pointer of data.
     #}
 

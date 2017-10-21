@@ -29,7 +29,7 @@ import MXNet.Core.Base.Internal
 import MXNet.Core.Base.Internal.TH (registerSymbolOps)
 import MXNet.Core.NNVM.Internal (nnGetOpHandle, nnSymbolCompose)
 import Prelude hiding (sin, sinh, cos, cosh, tan, tanh, min, max, round, floor,
-                       abs, sum, sqrt, log, exp, flip, concat)
+                       abs, sum, sqrt, log, exp, flip, concat, repeat, reverse)
 
 -- | Register symbol operators.
 $(registerSymbolOps)

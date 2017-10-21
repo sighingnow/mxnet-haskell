@@ -424,9 +424,13 @@ instance Neural NDArray where
     dropout input p = NDArray . unsafePerformIO $ do
         let handle1 = getHandle input
         I.dropout handle1 (add @"p" p nil)
-    batchNorm input = NDArray . unsafePerformIO $ do
+    batchNorm input gm bt mm mv = NDArray . unsafePerformIO $ do
         let handle1 = getHandle input
-        I.batchnorm handle1 nil
+        let handle2 = getHandle gm
+        let handle3 = getHandle bt
+        let handle4 = getHandle mm
+        let handle5 = getHandle mv
+        I.batchnorm handle1 handle2 handle3 handle4 handle5 nil
     instanceNorm input gamma beta eps = NDArray . unsafePerformIO $ do
         let handle1 = getHandle input
             handle2 = getHandle gamma
@@ -475,5 +479,6 @@ instance Neural NDArray where
     blockGrad input = NDArray . unsafePerformIO $ do
         let handle1 = getHandle input
         I.blockgrad handle1
-    custom op = NDArray . unsafePerformIO $ do
-        I.custom op
+    custom input op = NDArray . unsafePerformIO $ do
+        let handles = map getHandle input
+        I.custom handles op
