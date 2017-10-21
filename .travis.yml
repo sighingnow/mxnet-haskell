@@ -33,7 +33,7 @@ before_install:
   - sudo unlink /usr/bin/gcc && sudo ln -s /usr/bin/gcc-4.8 /usr/bin/gcc
   - sudo unlink /usr/bin/g++ && sudo ln -s /usr/bin/g++-4.8 /usr/bin/g++
   # Download pre-built mxnet library.
-  - wget -O wget -O mxnet-lib.zip "https://drive.google.com/uc?export=download&id=0B3nF_Z9CRFTUZlhyQXFubUF5OU" # version 0.12.0-rc0
+  - wget -O mxnet-lib.zip "https://drive.google.com/uc?export=download&id=0B3nF_Z9CRFTUZlhyQXFubUF5OU" # version 0.12.0-rc0
   - unzip mxnet-lib.zip -O mxnet-lib
   - export LIBRARY_PATH=~/mxnet-lib/lib:$LIBRARY_PATH
   - export LD_LIBRARY_PATH=~/mxnet-lib/lib:$LD_LIBRARY_PATH
