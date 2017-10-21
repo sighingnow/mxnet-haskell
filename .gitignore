@@ -26,3 +26,5 @@ _cache/
 _site/
 .stack-work/
 
+# extra-include-dirs
+include/
