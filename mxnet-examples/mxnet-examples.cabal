@@ -1,5 +1,5 @@
 name:                       mxnet-examples
-version:                    0.1.0.0
+version:                    0.2.0.0
 synopsis:                   Examples for MXNet in Haskell.
 description:                Examples for MXNet in Haskell.
 homepage:                   http://github.com/sighingnow/mxnet-haskell#readme
