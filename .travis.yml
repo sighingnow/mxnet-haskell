@@ -27,6 +27,11 @@ matrix:
     compiler: "#stack ghc-8.0.2"
   - env: BUILD=stack RESOLVER="nightly-2017-10-11"
     compiler: "#stack ghc-8.2.1"
+  allow_failures:
+  - env: BUILD=stack RESOLVER="lts-7.9"
+    compiler: "#stack ghc-8.0.1"
+  - env: BUILD=stack RESOLVER="lts-8.0"
+    compiler: "#stack ghc-8.0.2"
 
 before_install:
   # Set up the correct version of gcc and g++.
