@@ -1,8 +1,16 @@
+{-# LANGUAGE CPP #-}
+
 import Distribution.Simple
 import Distribution.Simple.Setup
+
+#if MIN_VERSION_Cabal(2,0,0)
 import Distribution.Types.LocalBuildInfo
 import Distribution.Types.GenericPackageDescription
 import Distribution.Types.HookedBuildInfo
+#else
+import Distribution.Simple.LocalBuildInfo
+import Distribution.PackageDescription
+#endif
 
 import Data.List (find)
 

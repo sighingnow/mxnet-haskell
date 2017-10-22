@@ -1,5 +1,5 @@
 name:                       c2hs-extra
-version:                    0.1.0.0
+version:                    0.1.0.1
 synopsis:                   Convenient marshallers for complicate C types.
 description:                Convenient marshallers for complicate C types.
 homepage:                   http://github.com/sighingnow/mxnet-haskell#readme
