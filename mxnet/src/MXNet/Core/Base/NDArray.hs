@@ -56,7 +56,7 @@ makeEmptyNDArray sh ctx delayed = do
     let sh' = fromIntegral <$> sh
         nlen = fromIntegral . length $ sh
         dtype = typeid (undefined :: a)
-        handle <- checked $ mxNDArrayCreateEx sh' nlen (deviceType ctx) (deviceId ctx) (if delayed then 1 else 0) dtype
+    handle <- checked $ mxNDArrayCreateEx sh' nlen (deviceType ctx) (deviceId ctx) (if delayed then 1 else 0) dtype
     return $ NDArray handle
 
 -- | Make a new NDArray with given shape.
@@ -68,10 +68,10 @@ makeNDArray :: DType a
 makeNDArray sh ctx ds = do
     let sh' = fromIntegral <$> sh
         nlen = fromIntegral . length $ sh
-        handle <- checked $ mxNDArrayCreate sh' nlen (deviceType ctx) (deviceId ctx) 0
+    handle <- checked $ mxNDArrayCreate sh' nlen (deviceType ctx) (deviceId ctx) 0
     V.unsafeWith ds $ \p -> do
-        let len = fromIntegral (V.length ds)
-        void $ mxNDArraySyncCopyFromCPU handle (castPtr p) len
+    let len = fromIntegral (V.length ds)
+    void $ mxNDArraySyncCopyFromCPU handle (castPtr p) len
     return $ NDArray handle
 
 -- | Get the shape of given NDArray.
