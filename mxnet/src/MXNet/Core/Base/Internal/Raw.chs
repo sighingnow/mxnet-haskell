@@ -240,7 +240,7 @@ mxNDArrayGetShape handle = do
 
 -- | Get the type of the data in NDArray
 {#fun MXNDArrayGetDType as mxNDArrayGetDType
-    { id `NDArrayHandle'            -- ^ The NDArray handle.
+    { withNDArrayHandle* `NDArrayHandle'            -- ^ The NDArray handle.
     , alloca- `Int' peekIntegral*
     } -> `Int' -- ^ The type of data in this NDArray handle.
     #}

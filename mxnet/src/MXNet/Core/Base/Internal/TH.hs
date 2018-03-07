@@ -334,7 +334,7 @@ makeSymbolFunc _name desc argv argtype = do
                           || alias
                           || _name `elem` ["_NDArray", "_Native", "_arange"]
                           || _name `elem` ["cast", "crop"]  -- duplicate with "Cast" and "Crop"
-                          || null explicitArg
+                          -- || null explicitArg
                           || _name == "take" -- Operator @take@ will take two @SymbolHandle@ as arguments, can't be marshalled as strings.
                           || _name == "where"
                 then []
