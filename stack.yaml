@@ -1,4 +1,4 @@
-resolver: nightly-2017-10-11
+resolver: lts-9.14
 
 packages:
 - c2hs-extra
@@ -6,6 +6,7 @@ packages:
 - mxnet-examples
 
 extra-deps:
+- tuple-ops-0.0.0.1
 
 flags: {}
 

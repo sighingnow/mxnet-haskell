@@ -35,6 +35,12 @@ module MXNet.Core.Types.Internal
     , CustomOpPropCreator
     , MXKVStoreUpdater
     , MXKVStoreServerController
+    , nullNDArrayHandle
     ) where
 
 import MXNet.Core.Types.Internal.Raw
+import Foreign.Ptr (nullPtr)
+import Foreign.ForeignPtr (newForeignPtr_)
+
+nullNDArrayHandle :: IO NDArrayHandle
+nullNDArrayHandle = NDArrayHandle <$> newForeignPtr_ nullPtr

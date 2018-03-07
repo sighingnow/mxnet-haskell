@@ -23,23 +23,23 @@ import           MXNet.Core.Base.Internal
 registerNDArrayOps :: Bool      -- ^ If support "out" key in argument dictionary.
                    -> Q [Dec]
 registerNDArrayOps mutable = runIO $ do
-    (_, names) <- mxListAllOpNames
+    names <- mxListAllOpNames
     concat <$> mapM (register mutable) names
   where
     register mutable _name = do
         (_, handle) <- nnGetOpHandle _name
-        (_, _, desc, _, argv, argtype, _, _, _) <- mxSymbolGetAtomicSymbolInfo handle
+        (_, desc, _, argv, argtype, _, _, _) <- mxSymbolGetAtomicSymbolInfo handle
         makeNDArrayFunc mutable _name desc argv argtype
 
 -- | Register symbol functions.
 registerSymbolOps :: Q [Dec]
 registerSymbolOps = runIO $ do
-    (_, names) <- mxListAllOpNames
+    names <- mxListAllOpNames
     concat <$> mapM register names
   where
     register _name = do
         (_, handle) <- nnGetOpHandle _name
-        (_, _, desc, _, argv, argtype, _, _, _) <- mxSymbolGetAtomicSymbolInfo handle
+        (_, desc, _, argv, argtype, _, _, _) <- mxSymbolGetAtomicSymbolInfo handle
         makeSymbolFunc _name desc argv argtype
 
 -------------------------------------------------------------------------------
@@ -131,7 +131,7 @@ makeNDArrayFunc mutable _name desc argv argtype = do
                    ]
             , BindS (TupP [VarP (mkName "_"), VarP (mkName "op")]) $
                 AppE (VarE (mkName "nnGetOpHandle")) (LitE (StringL _name))
-            , BindS (TupP [VarP (mkName "_"), VarP (mkName "res")]) $
+            , BindS (VarP (mkName "res")) $
                 AppE (AppE (AppE (AppE (VarE (mkName "mxImperativeInvoke"))
                                        (VarE (mkName "op")))
                                  ndargs)
@@ -167,7 +167,7 @@ makeNDArrayFunc mutable _name desc argv argtype = do
                           || alias
                           || _name `elem` ["_NDArray", "_Native", "_arange"]
                           || _name `elem` ["cast", "crop"]  -- duplicate with "Cast" and "Crop"
-                          || null explicitArg
+                          -- || null explicitArg
                           || _name == "take" -- Operator @take@ will take two @SymbolHandle@ as arguments, can't be marshalled as strings.
                 then []
                 else [sig, fun, pragma]

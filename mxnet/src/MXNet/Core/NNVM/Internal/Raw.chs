@@ -7,11 +7,6 @@
 --
 -- Direct C FFI bindings for <nnvm/c_api.h>.
 --
-#if __GLASGOW_HASKELL__ >= 709
-{-# LANGUAGE Safe #-}
-#elif __GLASGOW_HASKELL__ >= 701
-{-# LANGUAGE Trustworthy #-}
-#endif
 #if __GLASGOW_HASKELL__ >= 801
 {-# LANGUAGE Strict #-}
 #endif
