@@ -70,9 +70,9 @@ makeNDArray sh ctx ds = do
         nlen = fromIntegral . length $ sh
     handle <- checked $ mxNDArrayCreate sh' nlen (deviceType ctx) (deviceId ctx) 0
     V.unsafeWith ds $ \p -> do
-    let len = fromIntegral (V.length ds)
-    void $ mxNDArraySyncCopyFromCPU handle (castPtr p) len
-    return $ NDArray handle
+        let len = fromIntegral (V.length ds)
+        void $ mxNDArraySyncCopyFromCPU handle (castPtr p) len
+        return $ NDArray handle
 
 -- | Get the shape of given NDArray.
 ndshape :: DType a
