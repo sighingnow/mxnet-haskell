@@ -45,5 +45,5 @@ getOutputs :: DType a
           => Executor a
           -> IO [NDArray a]
 getOutputs exec = do
-    (_, outs) <- mxExecutorOutputs (getHandle exec)
+    outs <- mxExecutorOutputs (getHandle exec)
     return $ NDArray <$> outs
