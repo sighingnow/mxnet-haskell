@@ -11,7 +11,8 @@ copyright:                  Copyright: (c) 2016-2017 Tao He
 category:                   Machine Learning
 build-type:                 Custom
 cabal-version:              >= 1.24
-custom-setup:
+
+custom-setup
     setup-depends:          base >= 4.7
                           , Cabal >= 1.24
 
@@ -45,6 +46,7 @@ Library
                           , template-haskell >= 2.10.0.0
                           , unordered-containers >= 0.2.7.0
                           , vector >= 0.10.0.0
+                          , tuple-ops == 0.0.0.1
     extra-libraries:        mxnet
 
 Test-Suite mxnet-test
