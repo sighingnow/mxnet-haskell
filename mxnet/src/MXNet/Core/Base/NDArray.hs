@@ -16,6 +16,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module MXNet.Core.Base.NDArray where
 
@@ -30,6 +31,7 @@ import           Foreign.Ptr
 import           GHC.Exts (IsList(..))
 import           Text.PrettyPrint.Annotated.HughesPJClass (Pretty(..), prettyShow)
 import           System.IO.Unsafe (unsafePerformIO)
+import           GHC.Generics
 
 import           MXNet.Core.Base.DType
 import           MXNet.Core.Base.Internal
@@ -38,6 +40,7 @@ import           MXNet.Core.Base.HMap
 
 -- | NDArray type alias.
 newtype NDArray a = NDArray { getHandle :: NDArrayHandle }
+    deriving Generic
 
 -- | Wait all async operation to finish in MXNet.
 waitAll :: IO ()
@@ -53,7 +56,7 @@ makeEmptyNDArray sh ctx delayed = do
     let sh' = fromIntegral <$> sh
         nlen = fromIntegral . length $ sh
         dtype = typeid (undefined :: a)
-    (_, handle) <- mxNDArrayCreateEx sh' nlen (deviceType ctx) (deviceId ctx) (if delayed then 1 else 0) dtype
+    handle <- checked $ mxNDArrayCreateEx sh' nlen (deviceType ctx) (deviceId ctx) (if delayed then 1 else 0) dtype
     return $ NDArray handle
 
 -- | Make a new NDArray with given shape.
@@ -65,18 +68,18 @@ makeNDArray :: DType a
 makeNDArray sh ctx ds = do
     let sh' = fromIntegral <$> sh
         nlen = fromIntegral . length $ sh
-    (_, handle) <- mxNDArrayCreate sh' nlen (deviceType ctx) (deviceId ctx) 0
+    handle <- checked $ mxNDArrayCreate sh' nlen (deviceType ctx) (deviceId ctx) 0
     V.unsafeWith ds $ \p -> do
         let len = fromIntegral (V.length ds)
         void $ mxNDArraySyncCopyFromCPU handle (castPtr p) len
-    return $ NDArray handle
+        return $ NDArray handle
 
 -- | Get the shape of given NDArray.
 ndshape :: DType a
       => NDArray a
       -> IO (Int, [Int])  -- ^ Dimensions and size of every dimensions.
 ndshape arr = do
-    (_, nlen, sh) <- mxNDArrayGetShape (getHandle arr)
+    (nlen, sh) <- mxNDArrayGetShape (getHandle arr)
     return (fromIntegral nlen, fromIntegral <$> sh)
 
 -- | Get size of the given ndarray.
@@ -88,7 +91,7 @@ ndsize arr = (product . snd) <$> ndshape arr
 -- | Get context of the given ndarray.
 context :: DType a => NDArray a -> IO Context
 context arr = do
-    (_, device'type, device'id) <- mxNDArrayGetContext (getHandle arr)
+    (device'type, device'id) <- checked $ mxNDArrayGetContext (getHandle arr)
     return $ Context device'type device'id
 
 -- | Make a copy of the give ndarray.
@@ -100,7 +103,7 @@ items :: DType a => NDArray a -> IO (Vector a)
 items arr = do
     nlen <- ndsize arr
     alloca $ \p -> do
-        _ <- mxNDArraySyncCopyToCPU (getHandle arr) p (fromIntegral nlen)
+        checked $ mxNDArraySyncCopyToCPU (getHandle arr) p (fromIntegral nlen)
         fromList <$> peekArray nlen (castPtr p :: Ptr a)
 
 -- | Return a sliced ndarray that __shares memory__ with current one.
@@ -111,7 +114,7 @@ slice :: DType a
       -> NDArray a
 slice arr start end = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
-    (_, handle') <- mxNDArraySlice handle (fromIntegral start) (fromIntegral end)
+    handle' <- checked $ mxNDArraySlice handle (fromIntegral start) (fromIntegral end)
     return handle'
 
 -- | Return a sub ndarray that __shares memory__ with current one.
@@ -121,7 +124,7 @@ at :: DType a
    -> NDArray a
 at arr idx = NDArray . unsafePerformIO $ do
     let handle = getHandle arr
-    (_, handle') <- mxNDArrayAt handle (fromIntegral idx)
+    handle' <- checked $ mxNDArrayAt handle (fromIntegral idx)
     return handle'
 
 -- | Block until all pending writes operations on current ndarray are finished.

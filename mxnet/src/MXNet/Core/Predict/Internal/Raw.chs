@@ -7,11 +7,6 @@
 --
 -- Direct C FFI bindings for <mxnet/c_predict_api.h>.
 --
-#if __GLASGOW_HASKELL__ >= 709
-{-# LANGUAGE Safe #-}
-#elif __GLASGOW_HASKELL__ >= 701
-{-# LANGUAGE Trustworthy #-}
-#endif
 {-# LANGUAGE ForeignFunctionInterface #-}
 
 module MXNet.Core.Predict.Internal.Raw where

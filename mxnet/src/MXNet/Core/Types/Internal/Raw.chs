@@ -7,18 +7,20 @@
 --
 -- Collect data type defintions into a single raw binding module to avoid redefinitions.
 --
-#if __GLASGOW_HASKELL__ >= 709
-{-# LANGUAGE Safe #-}
-#elif __GLASGOW_HASKELL__ >= 701
-{-# LANGUAGE Trustworthy #-}
-#endif
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module MXNet.Core.Types.Internal.Raw where
 
 import Foreign.C.Types
 import Foreign.Ptr
 import Foreign.Storable
+import Foreign.ForeignPtr
+import Foreign.ForeignPtr.Unsafe
+import Foreign.Marshal.Array (withArray)
+import GHC.Generics
+import Control.Monad ((>=>))
 
 #include <nnvm/c_api.h>
 #include <mxnet/c_api.h>
@@ -63,6 +65,7 @@ instance Storable OpHandle where
 
 -- | Handle to a symbol that can be bind as operator.
 {#pointer SymbolHandle newtype #}
+deriving instance Generic SymbolHandle
 
 instance Storable SymbolHandle where
     sizeOf (SymbolHandle t) = sizeOf t
@@ -72,6 +75,7 @@ instance Storable SymbolHandle where
 
 -- | Handle to Graph.
 {#pointer GraphHandle newtype #}
+deriving instance Generic GraphHandle
 
 instance Storable GraphHandle where
     sizeOf (GraphHandle t) = sizeOf t
@@ -84,16 +88,26 @@ instance Storable GraphHandle where
 ---------------------------------------------------------------------}
 
 -- | Handle to NDArray.
-{#pointer NDArrayHandle newtype #}
+{#pointer NDArrayHandle foreign finalizer MXNDArrayFree as mxNDArrayFree newtype #}
+deriving instance Generic NDArrayHandle
+type NDArrayHandlePtr = Ptr NDArrayHandle
 
-instance Storable NDArrayHandle where
-    sizeOf (NDArrayHandle t) = sizeOf t
-    alignment (NDArrayHandle t) = alignment t
-    peek p = fmap NDArrayHandle (peek (castPtr p))
-    poke p (NDArrayHandle t) = poke (castPtr p) t
+newNDArrayHandle :: NDArrayHandlePtr -> IO NDArrayHandle
+newNDArrayHandle = newForeignPtr mxNDArrayFree >=> return . NDArrayHandle
+
+peekNDArrayHandle :: Ptr NDArrayHandlePtr -> IO NDArrayHandle
+peekNDArrayHandle = peek >=> newNDArrayHandle
+
+withNDArrayHandleArray :: [NDArrayHandle] -> (Ptr NDArrayHandlePtr -> IO r) -> IO r
+withNDArrayHandleArray array io = do
+    let unNDArrayHandle (NDArrayHandle fptr) = fptr
+    r <- withArray (map (unsafeForeignPtrToPtr . unNDArrayHandle) array) io
+    mapM_ (touchForeignPtr . unNDArrayHandle) array
+    return r
 
 -- | Handle to a mxnet narray function that changes NDArray.
 {#pointer FunctionHandle newtype #}
+deriving instance Generic FunctionHandle
 
 instance Storable FunctionHandle where
     sizeOf (FunctionHandle t) = sizeOf t
@@ -103,6 +117,7 @@ instance Storable FunctionHandle where
 
 -- | Handle to a function that takes param and creates symbol.
 type AtomicSymbolCreator = OpHandle
+deriving instance Generic AtomicSymbolHandle
 
 -- | Handle to a AtomicSymbol.
 {#pointer AtomicSymbolHandle newtype #}
@@ -113,17 +128,20 @@ instance Storable AtomicSymbolHandle where
     peek p = fmap AtomicSymbolHandle (peek (castPtr p))
     poke p (AtomicSymbolHandle t) = poke (castPtr p) t
 
-{#pointer ExecutorHandle newtype #}
+{#pointer ExecutorHandle foreign finalizer MXExecutorFree as mxExecutorFree newtype #}
+deriving instance Generic ExecutorHandle
 
--- | Handle to an Executor.
-instance Storable ExecutorHandle where
-    sizeOf (ExecutorHandle t) = sizeOf t
-    alignment (ExecutorHandle t) = alignment t
-    peek p = fmap ExecutorHandle (peek (castPtr p))
-    poke p (ExecutorHandle t) = poke (castPtr p) t
+type ExecutorHandlePtr = Ptr ExecutorHandle
+
+newExecutorHandle :: ExecutorHandlePtr -> IO ExecutorHandle
+newExecutorHandle = newForeignPtr mxExecutorFree >=> return . ExecutorHandle
+
+peekExecutorHandle :: Ptr ExecutorHandlePtr -> IO ExecutorHandle
+peekExecutorHandle = peek >=> newExecutorHandle
 
 -- | Handle a dataiter creator.
 {#pointer DataIterCreator newtype #}
+deriving instance Generic DataIterCreator
 
 instance Storable DataIterCreator where
     sizeOf (DataIterCreator t) = sizeOf t
@@ -133,6 +151,7 @@ instance Storable DataIterCreator where
 
 -- | Handle to a DataIterator.
 {#pointer DataIterHandle newtype #}
+deriving instance Generic DataIterHandle
 
 instance Storable DataIterHandle where
     sizeOf (DataIterHandle t) = sizeOf t
@@ -142,6 +161,7 @@ instance Storable DataIterHandle where
 
 -- | Handle to KVStore.
 {#pointer KVStoreHandle newtype #}
+deriving instance Generic KVStoreHandle
 
 instance Storable KVStoreHandle where
     sizeOf (KVStoreHandle t) = sizeOf t
@@ -151,6 +171,7 @@ instance Storable KVStoreHandle where
 
 -- | Handle to RecordIO.
 {#pointer RecordIOHandle newtype #}
+deriving instance Generic RecordIOHandle
 
 instance Storable RecordIOHandle where
     sizeOf (RecordIOHandle t) = sizeOf t
@@ -160,6 +181,7 @@ instance Storable RecordIOHandle where
 
 -- | Handle to MXRtc.
 {#pointer RtcHandle newtype #}
+deriving instance Generic RtcHandle
 
 instance Storable RtcHandle where
     sizeOf (RtcHandle t) = sizeOf t
@@ -169,14 +191,16 @@ instance Storable RtcHandle where
 
 -- | Callback: ExecutorMonitorCallback.
 {#pointer ExecutorMonitorCallback newtype #}
+deriving instance Generic ExecutorMonitorCallback
 
 -- | Callback: CustomOpPropCreator.
 {#pointer CustomOpPropCreator newtype #}
+deriving instance Generic CustomOpPropCreator
 
 -- | Callback: MXKVStoreUpdater, user-defined updater for the kvstore.
 type MXKVStoreUpdater = Int             -- ^ The key.
-                      -> NDArrayHandle  -- ^ The pushed value on the key.
-                      -> NDArrayHandle  -- ^ The value stored on local on the key.
+                      -> NDArrayHandlePtr  -- ^ The pushed value on the key.
+                      -> NDArrayHandlePtr  -- ^ The value stored on local on the key.
                       -> Ptr ()         -- ^ The additional handle to the updater.
                       -> IO Int
 

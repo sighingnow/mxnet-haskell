@@ -12,6 +12,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module MXNet.Core.Base.Symbol where
 
@@ -24,6 +25,7 @@ import           Data.Monoid
 import           Foreign.Ptr (nullPtr)
 import           System.IO.Unsafe
 import           Unsafe.Coerce (unsafeCoerce)
+import           GHC.Generics
 
 import           MXNet.Core.Base.DType
 import           MXNet.Core.Base.Internal
@@ -35,10 +37,11 @@ import qualified MXNet.Core.Base.NDArray as NDArray (getHandle)
 
 -- | Type alias for variable.
 newtype Symbol a = Symbol { getHandle :: SymbolHandle }
+    deriving Generic
 
 instance DType a => Show (Symbol a) where
     show sym = unsafePerformIO $ do
-        (_, str) <- mxSymbolPrint (getHandle sym)
+        str <- checked $ mxSymbolPrint (getHandle sym)
         return str
 
 -- | Make a new symbolic variable with given name.
@@ -46,7 +49,7 @@ variable :: DType a
         => String           -- ^ Name.
         -> IO (Symbol a)    -- ^ Result variable.
 variable name = do
-    (_, handle) <- mxSymbolCreateVariable name
+    handle <- checked $ mxSymbolCreateVariable name
     return $ Symbol handle
 
 -- | Get the name of a given variable.
@@ -56,7 +59,7 @@ getName = mxSymbolGetName . getHandle >=> \(_, nm, _) -> return nm
 -- | Get specified attribute of symbol.
 getAttr :: DType a => Symbol a -> String -> IO (Maybe String)
 getAttr sym key = do
-    (_, s, success) <- mxSymbolGetAttr (getHandle sym) key
+    (s, success) <- checked $ mxSymbolGetAttr (getHandle sym) key
     return $ if success == 0    -- 0 when success, -1 when failure happens
                 then Just s
                 else Nothing
@@ -67,16 +70,14 @@ setAttr sym key value = void $ mxSymbolSetAttr (getHandle sym) key value
 
 -- | Infer the shape of the given symbol, return the in, out and auxiliary shape size.
 infershape :: DType a => Symbol a -> [String] -> IO ([[Int]], [[Int]], [[Int]])
-infershape sym args = do
-    (_, arg, out, aux) <- mxSymbolInferShape (getHandle sym) args [0] []
-    return (arg, out, aux)
+infershape sym args = mxSymbolInferShape (getHandle sym) args [0] []
 
 -- | Get the autodiff of current symbol.
 -- This function can only be used if current symbol is a loss function.
 grad :: DType a => Symbol a -> [String] -> IO (Symbol a)
 grad sym args = do
     let nargs = fromIntegral (length args)
-    (_, handle) <- mxSymbolGrad (getHandle sym) nargs args
+    handle <- checked $ mxSymbolGrad (getHandle sym) nargs args
     return $ Symbol handle
 
 -- | Bind with explicit argument mapping (name -- value mapping).
@@ -89,7 +90,7 @@ bind sym Context{..} args = do
     inputs <- genNDArrayMapping <$> listInputs sym
     -- req_map = {'null': 0, 'write': 1, 'add': 3}
     let req_types = replicate (HM.size inputs) 1        -- use default value.
-    (_, exec) <- mxExecutorBind (getHandle sym)
+    exec <- checked $ mxExecutorBind (getHandle sym)
                                 deviceType
                                 deviceId
                                 (fromIntegral (HM.size inputs))     -- length of input arguments.
@@ -117,7 +118,7 @@ bind' sym Context{..} args = do
     inputs <- genNDArrayMapping <$> listInputs sym
     -- req_map = {'null': 0, 'write': 1, 'add': 3}
     let req_types = replicate (HM.size inputs) 1        -- use default value.
-    (_, exec) <- mxExecutorBind (getHandle sym)
+    exec <- checked $ mxExecutorBind (getHandle sym)
                                 deviceType
                                 deviceId
                                 (fromIntegral (HM.size inputs))     -- length of input arguments.
@@ -135,15 +136,15 @@ bind' sym Context{..} args = do
 
 -- | List all input arguments.
 listInputs :: DType a => Symbol a -> IO [String]
-listInputs sym = snd <$> mxSymbolListArguments (getHandle sym)
+listInputs sym = mxSymbolListArguments (getHandle sym)
 
 -- | List all output results.
 listOutputs :: DType a => Symbol a -> IO [String]
-listOutputs sym = snd <$> mxSymbolListOutputs (getHandle sym)
+listOutputs sym = mxSymbolListOutputs (getHandle sym)
 
 -- | List all auxiliary states.
 listAuxiliaries :: DType a => Symbol a -> IO [String]
-listAuxiliaries sym = snd <$> mxSymbolListAuxiliaryStates (getHandle sym)
+listAuxiliaries sym = mxSymbolListAuxiliaryStates (getHandle sym)
 
 instance DType a => Num (Symbol a) where
     (+) sym1 sym2 = Symbol . unsafePerformIO $ do

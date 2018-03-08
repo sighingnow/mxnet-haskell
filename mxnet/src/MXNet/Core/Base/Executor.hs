@@ -8,16 +8,19 @@
 -- Symbol module.
 --
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module MXNet.Core.Base.Executor where
 
 import           Control.Monad
+import           GHC.Generics
 import           MXNet.Core.Base.Internal
 import           MXNet.Core.Base.DType
 import           MXNet.Core.Base.NDArray (NDArray(NDArray))
 
 -- | Type alias for variable.
 newtype Executor a = Executor { getHandle :: ExecutorHandle }
+    deriving Generic
 
 -- | Make an executor using the given handler.
 makeExecutor :: DType a
@@ -42,5 +45,5 @@ getOutputs :: DType a
           => Executor a
           -> IO [NDArray a]
 getOutputs exec = do
-    (_, outs) <- mxExecutorOutputs (getHandle exec)
+    outs <- mxExecutorOutputs (getHandle exec)
     return $ NDArray <$> outs
