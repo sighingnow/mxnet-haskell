@@ -25,8 +25,7 @@ import           Data.Int
 import           Data.Monoid
 import           Data.Vector.Storable (Vector)
 import qualified Data.Vector.Storable as V
-import           Foreign.Marshal.Alloc (alloca)
-import           Foreign.Marshal.Array (peekArray)
+import qualified Data.Vector.Storable.Mutable as VMut
 import           Foreign.Ptr
 import           GHC.Exts (IsList(..))
 import           Text.PrettyPrint.Annotated.HughesPJClass (Pretty(..), prettyShow)
@@ -102,9 +101,10 @@ copy arr = NDArray <$> I._copy (getHandle arr)
 items :: DType a => NDArray a -> IO (Vector a)
 items arr = do
     nlen <- ndsize arr
-    alloca $ \p -> do
-        checked $ mxNDArraySyncCopyToCPU (getHandle arr) p (fromIntegral nlen)
-        fromList <$> peekArray nlen (castPtr p :: Ptr a)
+    mvec <- VMut.new nlen
+    VMut.unsafeWith mvec $ \p -> do
+        checked $ mxNDArraySyncCopyToCPU (getHandle arr) (castPtr p) (fromIntegral nlen)
+    V.unsafeFreeze mvec
 
 -- | Return a sliced ndarray that __shares memory__ with current one.
 slice :: DType a
